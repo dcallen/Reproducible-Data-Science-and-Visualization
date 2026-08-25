@@ -52,13 +52,65 @@ A few habits will save you a lot of pain down the road:
 
 Good file names are both human-readable and computer-readable:
 
-- Use lowercase letters, numbers, hyphens, or underscores — avoid spaces and
-  special characters, which can cause problems in scripts and command lines.
+- To make sure a human can read the name, use lowercase letters, numbers, 
+  hyphens, or underscores to separate words in the name so that a human brain can
+  interpret the text
+- To make sure a computer can read the name, avoid spaces and special characters, 
+  which can cause problems in scripts and command lines.
 - Be descriptive: `bird-counts-2023.csv` is more useful than `data1.csv`.
 - If files need to sort in a meaningful order, use leading zeros:
   `01-clean-data.R`, `02-explore-data.R`, `03-make-figures.R` will sort
   correctly, while `1-clean-data.R`, `10-make-figures.R`, `2-explore-data.R`
   will not.
+
+Here are some examples of file names that are ill named for various reasons:
+
+**data.csv** — no context on what data this is
+**Final Data.csv** — spaces cause problems in scripts/command lines, and "final" 
+  is often a lie
+**finalfinal2.csv** — the sequel to "final," equally untrustworthy
+**Untitled1.R** — a default name nobody bothered to change
+**data (1).csv** — the result of downloading the same file twice
+**MyData!!.xlsx** — special characters like !, #, &, % can break file paths and scripts
+**analysis_JAN15_v2_USE THIS ONE_edited.R** — trying to convey version history through the filename instead of using version control
+**10-figures.R**, **2-clean-data.R**, **1-explore.R** — inconsistent digit padding, so alphabetical sort puts them out of logical order
+**John's Analysis.R** — apostrophe and space, plus not descriptive of what it does
+**df.R** — a name so generic it tells you nothing
+
+## Documentation
+
+Good file organization only gets you so far — at some point, someone (often
+future you) needs a plain-language explanation of what a project is, how it's
+organized, and how to reproduce it. That's the job of a **README** file.
+
+Every project folder should include a `README.md` file at the top level. At a
+minimum, a good README should contain:
+
+- **Project title and short description** — what is this project, and what
+  question or problem does it address?
+- **Directory structure overview** — a brief explanation of what lives in
+  each folder (e.g., "`data/raw/` contains the original survey data as
+  received; do not edit these files directly").
+- **How to reproduce the analysis** — what order to run scripts in, and any
+  setup steps needed (e.g., which packages to install).
+- **Data sources** — where the data came from, including links or citations
+  if it's from an external source. If you are using original data, give a brief 
+  description of the methods used to collect it.
+- **Metadata** - for the data you have, describe what they are and what those 
+  numbers mean! What do the variables measure, what are their units?
+- **Author and contact information** — who created this project, and how to
+  reach them with questions.
+- **Last Update** — When was this file last updated? Why was it updated? This
+  is basic version control.
+
+READMEs are typically written in in text files (.txt) or Markdown files (.md). 
+  DO NOT use a file that requires proprietary software to open, such as a 
+  Microsoft Word file (.docx), just in case Microsoft doesn't exist in 20 years
+  when you come back to your project to find some old data.
+
+A README doesn't need to be long. The goal is simply that anyone — including
+you, six months from now — can open the project folder and understand what's
+going on without having to dig through code.
 
 ## Final Project: Topic and Dataset Selection
 
@@ -77,7 +129,7 @@ Your dataset should have at least **100 rows (observations)** and **10 columns
 
 ### What to submit
 
-Go to Canvas, and complete the "Week 1" assignment.
+Go to Canvas, and complete the "Week 1" assignment:
 
 1. A brief description of your dataset, including an overview of how the data 
   were collected, how many observations there are, and how many variables were
