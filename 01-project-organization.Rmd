@@ -50,7 +50,7 @@ A few habits will save you a lot of pain down the road:
   
 ## File Path Separators
 
-Something to be mindful of is that the separator between folder names in a path differs across operating systems: Windows uses a backslash (""), while Mac/Linux use a forward slash ("/"). R, however, always expects forward slashes in paths — even when you're working on Windows. This is because backslash is a special "escape" character in R, so using it in a path can cause errors or unexpected behavior. To stay safe, always use "/" when typing paths in R, regardless of your operating system.
+Something to be mindful of is that the separator between folder names in a path differs across operating systems: Windows uses a backslash ("\"), while Mac/Linux use a forward slash ("/"). R, however, always expects forward slashes in paths — even when you're working on Windows. This is because backslash is a special "escape" character in R, so using it in a path can cause errors or unexpected behavior. To stay safe, always use "/" when typing paths in R, regardless of your operating system.
 
 ## Relative and absolute paths
 
@@ -59,9 +59,9 @@ system. There are two ways to specify one.
 
 An **absolute path** gives the complete location, starting from the root of
 the file system. For example:
-
+```
 C:/Users/dcallen/Documents/Research/Data/schedule_2021.csv
-
+```
 You can find a file's absolute path by right-clicking it and viewing its
 properties (Windows) or holding Option and clicking "Copy as Pathname"
 (Mac).
@@ -74,12 +74,16 @@ figure out the file's actual location.
 For example, suppose your working directory is `Documents`. To reach the
 same file as above, the relative path would be:
 
+```
 Research/Data/schedule_2021.csv
+```
 
 If your working directory were instead `Data`, the relative path would
 simply be:
 
+```
 schedule_2021.csv
+```
 
 Relative paths aren't limited to subfolders of your working directory —
 you can also navigate *upward* using `../`, which means "go up one level,
@@ -96,12 +100,16 @@ Documents/
 If your working directory is `Data`, you could navigate to the `.Rproj`
 file in `Frogs` like this:
 
+```
 ../Frogs/data-cleaning.Rproj
+```
 
 Each `../` moves up one directory level, so you can stack them to climb
 several levels at once:
 
+```
 ../../../Documents
+```
 
 Relative paths are almost always preferable to absolute paths in scripts:
 since they don't depend on your specific computer's folder structure, a
