@@ -1,45 +1,90 @@
 # Project Organization
 
-*(This chapter introduces how to structure a reproducible data project, and
-doubles as the home for your final project proposal requirements. Rewrite
-the sections below in your own voice — headers are placeholders to build
-around.)*
+Before we write a single line of R code, it's worth thinking about how your
+project is organized. A well-organized project is easier to navigate, easier
+to share, and easier to return to months later when you've forgotten exactly
+what you did. This chapter covers some foundational habits for structuring a
+reproducible data project, and introduces the final project you'll build
+throughout the semester.
 
 ## Directory structure
 
-*(Discuss how to organize folders for a data project — e.g., separating raw
-data, scripts, outputs, and documentation.)*
+A reproducible project keeps different kinds of files separated into clearly
+labeled folders, rather than dumping everything into one location. A typical
+structure looks something like this:
+
+```
+my_project/
+├── data/
+│   ├── raw/            # original, unedited data — never modify these files
+│   └── processed/      # cleaned data produced by your scripts
+├── scripts/            # R scripts and RMarkdown files
+├── output/
+│   ├── figures/        # plots and visualizations
+│   └── tables/         # summary tables, model outputs
+├── docs/               # notes, README files, other documentation
+└── manuscript_files/   # finalized manuscript files for submission
+```
+
+The exact folder names and structure are less important than the underlying
+principle: someone unfamiliar with your project — including future you —
+should be able to look at the folder layout and understand what's in it and
+how it's used.
 
 ## Golden rules
 
-*(A short list of best practices — e.g., never edit raw data by hand, keep
-scripts self-contained, use relative paths.)*
+A few habits will save you a lot of pain down the road:
+
+- **Never edit raw data by hand.** Once your original data file is in `data/raw/`,
+  treat it as read-only. Any cleaning or transformation should happen in a
+  script, so there's a record of exactly what changed and why.
+- **Scripts should run top to bottom without manual intervention.** If your
+  script depends on you clicking things in a specific order that isn't written
+  down, it's not reproducible.
+- **Use relative paths, not absolute paths.** A path like `data/raw/survey.csv`
+  will work on any computer; a path like `/Users/yourname/Desktop/project/data/raw/survey.csv`
+  will only work on yours.
+- **Document as you go.** A future collaborator — or you, in six months — should
+  be able to understand your project without asking you questions. This means
+  annotating your code, and keeping your README files up date.
 
 ## Naming files
 
-*(Guidance on file-naming conventions that are both human- and
-computer-readable.)*
+Good file names are both human-readable and computer-readable:
+
+- Use lowercase letters, numbers, hyphens, or underscores — avoid spaces and
+  special characters, which can cause problems in scripts and command lines.
+- Be descriptive: `bird-counts-2023.csv` is more useful than `data1.csv`.
+- If files need to sort in a meaningful order, use leading zeros:
+  `01-clean-data.R`, `02-explore-data.R`, `03-make-figures.R` will sort
+  correctly, while `1-clean-data.R`, `10-make-figures.R`, `2-explore-data.R`
+  will not.
 
 ## Final Project: Topic and Dataset Selection
 
-For your final project, you'll choose your own dataset and apply the tools
-and concepts from this course to clean, explore, and visualize it.
+Throughout the semester, you'll apply the tools and concepts from this course
+to a dataset of your own choosing. You'll select your topic and dataset now,
+in Week 1, and build on it week by week as we introduce new skills — by the
+end of the course, you'll have cleaned, explored, and visualized your dataset
+using a fully reproducible workflow.
 
 ### Dataset eligibility criteria
 
-Your dataset must meet the following criteria:
+Your dataset should have at least **100 rows (observations)** and **10 columns
+  (variables)**. This ensures there's enough structure and complexity to
+  meaningfully practice data wrangling and visualization.
 
-- **Public availability:** The dataset must be publicly accessible (e.g.,
-  from a government agency, public repository, or published study) —
-  no proprietary or restricted-access data.
-- **Minimum size:** At least [X rows / observations] and [Y columns /
-  variables] *(fill in your minimum)*.
-- **Rationale:** A short written explanation (3–5 sentences) of why this
-  dataset interests you and what you hope to learn from it.
-- **Exploratory questions:** At least [2–3] questions you want to answer
-  using this dataset by the end of the course.
 
 ### What to submit
 
-*(Describe the submission format — e.g., a short RMarkdown document with
-the dataset link, rationale, and exploratory questions.)*
+Go to Canvas, and complete the "Week 1" assignment.
+
+1. A brief description of your dataset, including an overview of how the data 
+  were collected, how many observations there are, and how many variables were
+  measured.
+2. A short written explanation (3–5 sentences) of why this
+  dataset interests you and what you hope to learn from it.
+3. At least 2–3 questions you want to answer using
+  this dataset by the end of the course.
+4. A brief description on any data cleaning you anticipate needing to do, based 
+  on an initial look at the file.
