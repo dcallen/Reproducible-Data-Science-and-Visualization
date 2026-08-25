@@ -50,7 +50,7 @@ A few habits will save you a lot of pain down the road:
   
 ## File Path Separators
 
-Something to be mindful of is that the separator between folder names in a path differs across operating systems: Windows uses a backslash ('\'), while Mac/Linux use a forward slash ('/'). R, however, always expects forward slashes in paths — even when you're working on Windows. This is because backslash is a special "escape" character in R, so using it in a path can cause errors or unexpected behavior. To stay safe, always use '/' when typing paths in R, regardless of your operating system.
+Something to be mindful of is that the separator between folder names in a path differs across operating systems: Windows uses a backslash (`\`), while Mac/Linux use a forward slash (`/`). R, however, always expects forward slashes in paths — even when you're working on Windows. This is because backslash is a special "escape" character in R, so using it in a path can cause errors or unexpected behavior. To stay safe, always use `/` when typing paths in R, regardless of your operating system.
 
 ## Relative and absolute paths
 
