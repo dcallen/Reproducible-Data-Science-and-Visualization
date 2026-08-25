@@ -1,0 +1,11 @@
+book_filename: "course-book"
+delete_merged_file: true
+language:
+  ui:
+    chapter_name: "Chapter "
+output_dir: "docs"
+rmd_files: [
+  "index.Rmd",
+  "01-project-organization.Rmd"
+]
+new_session: yes

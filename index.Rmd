@@ -1,0 +1,87 @@
+--- 
+title: "[Your Course Title Here]"
+author: "[Your Name]"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+documentclass: book
+bibliography: [book.bib]
+biblio-style: apalike
+link-citations: yes
+description: "Course materials for [Course Number]: [Course Title]"
+---
+
+# Overview
+
+This digital book contains the course material for [Course Number: Course
+Title], taught at [Your Institution]. The aim of the course is to
+[one or two sentences on the goal of the course — what skills students will
+walk away with].
+
+This material is adapted from [*Reproducible Data Science*](https://ecorepsci.github.io/reproducible-science/)
+by Simona Picardi (University of Idaho), used under a
+[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+This adaptation and all new material is © [Your Name], [Year], licensed under
+the same terms.
+
+The content is organized into the following chapters:
+
+- Chapter 1: [Chapter 1 title]
+- *(add chapters here as you build them out)*
+
+## Final Project
+
+Throughout the semester, you will apply what you learn to a dataset of your
+own choosing. You'll select your topic and dataset in Week 1, and build on
+it week by week as we introduce new tools and concepts. See Chapter 1 for
+the project proposal requirements.
+
+## Software Requirements and Installation Instructions
+
+Before our first class session, please install the following software.
+Come to class with everything installed and verified — we'll do a quick
+check together, but coming prepared means we can dive into the material
+right away.
+
+### R
+
+R is a free software environment for statistical computing and graphics.
+Installing or updating R is a separate process from installing or updating
+RStudio (below) — you need both.
+
+- **Windows:** Download the latest version at <https://cran.r-project.org/bin/windows/base/>
+- **Mac OS:** Download the latest version at <https://cran.r-project.org/bin/macosx/>
+- **Linux:** Follow the instructions for your distribution at <https://cloud.r-project.org/bin/linux/>
+
+### RStudio
+
+RStudio is a free Integrated Development Environment (IDE) for R. Installing
+or updating RStudio is separate from installing or updating R.
+
+Download it from <https://posit.co/download/rstudio-desktop/>.
+
+### Required R Packages
+
+We'll be using the following R packages throughout the course: `tidyverse`,
+`rmarkdown`, `bookdown`, and `renv` *(add/remove packages as your syllabus
+takes shape)*. Install them, along with their dependencies, by running the
+following in the R console:
+
+```r
+install.packages(c("tidyverse",
+                    "rmarkdown",
+                    "bookdown",
+                    "renv"), dependencies = TRUE)
+```
+
+### Verifying Your Installation
+
+To confirm everything is working, open RStudio and run the following in
+the console:
+
+```r
+R.version.string
+library(tidyverse)
+```
+
+If R prints a version number and the `tidyverse` loads without error
+messages, you're all set.

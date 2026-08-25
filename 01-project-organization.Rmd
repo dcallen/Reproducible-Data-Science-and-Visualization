@@ -1,0 +1,45 @@
+# Project Organization
+
+*(This chapter introduces how to structure a reproducible data project, and
+doubles as the home for your final project proposal requirements. Rewrite
+the sections below in your own voice — headers are placeholders to build
+around.)*
+
+## Directory structure
+
+*(Discuss how to organize folders for a data project — e.g., separating raw
+data, scripts, outputs, and documentation.)*
+
+## Golden rules
+
+*(A short list of best practices — e.g., never edit raw data by hand, keep
+scripts self-contained, use relative paths.)*
+
+## Naming files
+
+*(Guidance on file-naming conventions that are both human- and
+computer-readable.)*
+
+## Final Project: Topic and Dataset Selection
+
+For your final project, you'll choose your own dataset and apply the tools
+and concepts from this course to clean, explore, and visualize it.
+
+### Dataset eligibility criteria
+
+Your dataset must meet the following criteria:
+
+- **Public availability:** The dataset must be publicly accessible (e.g.,
+  from a government agency, public repository, or published study) —
+  no proprietary or restricted-access data.
+- **Minimum size:** At least [X rows / observations] and [Y columns /
+  variables] *(fill in your minimum)*.
+- **Rationale:** A short written explanation (3–5 sentences) of why this
+  dataset interests you and what you hope to learn from it.
+- **Exploratory questions:** At least [2–3] questions you want to answer
+  using this dataset by the end of the course.
+
+### What to submit
+
+*(Describe the submission format — e.g., a short RMarkdown document with
+the dataset link, rationale, and exploratory questions.)*

@@ -1,0 +1,14 @@
+bookdown::gitbook:
+  css: style.css
+  config:
+    toc:
+      collapse: section
+      before: |
+        <li><strong>Your Course Title Here</strong></li>
+      after: |
+        <li><a href="https://github.com/YOUR-USERNAME/YOUR-REPO" target="_blank">View source on GitHub</a></li>
+    edit: null
+    download: null
+    sharing:
+      facebook: false
+      twitter: false

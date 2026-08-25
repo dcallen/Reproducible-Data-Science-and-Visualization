@@ -1,0 +1,12 @@
+/* Custom styling for the course book.
+   Add your own tweaks here — colors, fonts, spacing, etc. */
+
+body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+code {
+  color: #c7254e;
+  background-color: #f9f2f4;
+}

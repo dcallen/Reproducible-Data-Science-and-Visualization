@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*_bookdown.yml.orig
+course-book.Rmd
+_main.Rmd
+/docs/
+.DS_Store
