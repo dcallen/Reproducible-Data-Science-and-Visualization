@@ -7,7 +7,7 @@ documentclass: book
 description: "Course materials for WFS 597-003: Reproducible Data Science and Visualization in Ecosystem Science, Fall 2026"
 ---
 
-## Overview {-}
+# Overview {-}
 
 This digital book contains the course material for WFS 597-003: Reproducible 
   Data Science and Visualization in Ecosystem Science, taught at Penn State
@@ -15,7 +15,7 @@ This digital book contains the course material for WFS 597-003: Reproducible
   
 Reproducibility is fundamental in science, and modern scientists use software and code to manipulate and visualize data. This course aims to train students in becoming proficient in using programming tools to store, manipulate, analyze, and visualize data. These are must-have skills in academic and non-academic job markets in ecology and natural resource science. In this course, students will learn best practices in data manipulation, management and visualization for reproducible science. Topics covered include: R and the tidyverse for data cleaning, processing, analysis, and visualization; SQL relational databases, Git and GitHub for version control, code sharing and collaboration.
 
-# Learning Objectives
+## Learning Objectives
 - Students will become proficient in using R and RStudio software
 - Students will learn best practices for version control using Git and GitHub to generate sharable and reproducible data workflows
 - Students will learn how to use the ‘tidyverse’ suite of R functions to import, transform, and tidy datasets
