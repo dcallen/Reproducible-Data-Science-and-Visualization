@@ -17,7 +17,7 @@ walk away with].
 This material is adapted from [*Reproducible Data Science*](https://ecorepsci.github.io/reproducible-science/)
 by Simona Picardi (University of Idaho), used under a
 [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
-This adaptation and all new material is © [Your Name], [Year], licensed under
+This adaptation and all new material is © Daniel Allen, 2026, licensed under
 the same terms.
 
 The content is organized into the following chapters:
