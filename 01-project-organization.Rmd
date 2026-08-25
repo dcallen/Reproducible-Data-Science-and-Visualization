@@ -43,14 +43,14 @@ A few habits will save you a lot of pain down the road:
   down, it's not reproducible.
 - **Use relative paths, not absolute paths.** A path like `data/raw/survey.csv`
   will work on any computer; a path like `/Users/yourname/Desktop/project/data/raw/survey.csv`
-  will only work on yours.
+  will only work on yours. More on this below.
 - **Document as you go.** A future collaborator — or you, in six months — should
   be able to understand your project without asking you questions. This means
   annotating your code, and keeping your README files up date.
   
 ## File Path Separators
 
-Something to be mindful of is that the separator between folder names in a path differs across operating systems: Windows uses a backslash ("\"), while Mac/Linux use a forward slash ("/"). R, however, always expects forward slashes in paths — even when you're working on Windows. This is because backslash is a special "escape" character in R, so using it in a path can cause errors or unexpected behavior. To stay safe, always use "/" when typing paths in R, regardless of your operating system.
+Something to be mindful of is that the separator between folder names in a path differs across operating systems: Windows uses a backslash ('\'), while Mac/Linux use a forward slash ('/'). R, however, always expects forward slashes in paths — even when you're working on Windows. This is because backslash is a special "escape" character in R, so using it in a path can cause errors or unexpected behavior. To stay safe, always use '/' when typing paths in R, regardless of your operating system.
 
 ## Relative and absolute paths
 
@@ -71,14 +71,14 @@ a reference point — in R, that reference point is your current **working
 directory**. R combines the relative path with the working directory to
 figure out the file's actual location.
 
-For example, suppose your working directory is `Documents`. To reach the
+For example, suppose your working directory is `C:/Users/dcallen/Documents`. To reach the
 same file as above, the relative path would be:
 
 ```
 Research/Data/schedule_2021.csv
 ```
 
-If your working directory were instead `Data`, the relative path would
+If your working directory were instead `C:/Users/dcallen/Documents/Research/Data`, the relative path would
 simply be:
 
 ```
@@ -134,17 +134,17 @@ Good file names are both human-readable and computer-readable:
 
 Here are some examples of file names that are ill named for various reasons:
 
-**data.csv** — no context on what data this is
-**Final Data.csv** — spaces cause problems in scripts/command lines, and "final" 
+- **data.csv** — no context on what data this is
+- **Final Data.csv** — spaces cause problems in scripts/command lines, and "final" 
   is often a lie
-**finalfinal2.csv** — the sequel to "final," equally untrustworthy
-**Untitled1.R** — a default name nobody bothered to change
-**data (1).csv** — the result of downloading the same file twice
-**MyData!!.xlsx** — special characters like !, #, &, % can break file paths and scripts
-**analysis_JAN15_v2_USE THIS ONE_edited.R** — trying to convey version history through the filename instead of using version control
-**10-figures.R**, **2-clean-data.R**, **1-explore.R** — inconsistent digit padding, so alphabetical sort puts them out of logical order
-**John's Analysis.R** — apostrophe and space, plus not descriptive of what it does
-**df.R** — a name so generic it tells you nothing
+- **finalfinal2.csv** — the sequel to "final," equally untrustworthy
+- **Untitled1.R** — a default name nobody bothered to change
+- **data (1).csv** — the result of downloading the same file twice
+- **MyData!!.xlsx** — special characters like !, #, &, % can break file paths and scripts
+- **analysis_JAN15_v2_USE THIS ONE_edited.R** — trying to convey version history through the filename instead of using version control
+- **10-figures.R**, **2-clean-data.R**, **1-explore.R** — inconsistent digit padding, so alphabetical sort puts them out of logical order
+- **John's Analysis.R** — apostrophe and space, plus not descriptive of what it does
+- **df.R** — a name so generic it tells you nothing
 
 ## Documentation
 
@@ -191,7 +191,7 @@ using a fully reproducible workflow.
 
 ### Dataset eligibility criteria
 
-Your dataset should have at least **100 rows (observations)** and **10 columns
+Your dataset should have at least **100 rows (observations)** and at least **10 columns
   (variables)**. This ensures there's enough structure and complexity to
   meaningfully practice data wrangling and visualization.
 
