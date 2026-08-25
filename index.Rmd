@@ -7,7 +7,7 @@ documentclass: book
 description: "Course materials for WFS 597-003: Reproducible Data Science and Visualization in Ecosystem Science, Fall 2026"
 ---
 
-# Overview {-}
+## Overview {-}
 
 This digital book contains the course material for WFS 597-003: Reproducible 
   Data Science and Visualization in Ecosystem Science, taught at Penn State
