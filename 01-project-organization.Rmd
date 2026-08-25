@@ -85,11 +85,13 @@ Relative paths aren't limited to subfolders of your working directory —
 you can also navigate *upward* using `../`, which means "go up one level,
 to the parent folder." Consider this folder structure:
 
+```
 Documents/
 └── Research/
 ├── Data/
 └── Frogs/
 └── data-cleaning.Rproj
+```
 
 If your working directory is `Data`, you could navigate to the `.Rproj`
 file in `Frogs` like this:
