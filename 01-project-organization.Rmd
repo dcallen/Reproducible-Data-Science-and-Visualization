@@ -47,6 +47,11 @@ A few habits will save you a lot of pain down the road:
 - **Document as you go.** A future collaborator — or you, in six months — should
   be able to understand your project without asking you questions. This means
   annotating your code, and keeping your README files up date.
+  
+## File Path Separators
+
+Path separators
+Something to be mindful of is that the separator between folder names in a path is different on different operating systems. On Windows, it is a backslash ("\"), while on Mac/Linux, it is a slash ("/"). However, R uses the Mac/Linux convention, so always use "/" when typing paths in R.
 
 ## Naming files
 
