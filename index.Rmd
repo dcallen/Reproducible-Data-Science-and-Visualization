@@ -100,8 +100,7 @@ different arrangement.
 ### Required R Packages
 
 We'll be using the following R packages throughout the course: `tidyverse`,
-`rmarkdown`, `bookdown`, and `renv` *(add/remove packages as your syllabus
-takes shape)*. Install them, along with their dependencies, by running the
+`rmarkdown`, `bookdown`, and `renv`. Install them, along with their dependencies, by running the
 following in the R console:
 
 ```r
