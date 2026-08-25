@@ -4,9 +4,9 @@ bookdown::gitbook:
     toc:
       collapse: section
       before: |
-        <li><strong>Your Course Title Here</strong></li>
+        <li><strong>Reproducible-Data-Science-and-Visualization</strong></li>
       after: |
-        <li><a href="https://github.com/YOUR-USERNAME/YOUR-REPO" target="_blank">View source on GitHub</a></li>
+        <li><a href="https://github.com/dcallen/Reproducible_Data_Science_and_Visualization" target="_blank">View source on GitHub</a></li>
     edit: null
     download: null
     sharing:
