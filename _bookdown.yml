@@ -6,6 +6,7 @@ language:
 output_dir: "docs"
 rmd_files: [
   "index.Rmd",
-  "01-project-organization.Rmd"
+  "01-project-organization.Rmd",
+  "02-version-control-git.Rmd"
 ]
 new_session: yes

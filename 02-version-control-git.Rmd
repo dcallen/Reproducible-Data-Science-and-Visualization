@@ -1,0 +1,340 @@
+# Version Control with Git
+
+Git is a version control system: it keeps a complete history of every change
+you make to your files, and lets you step back to any earlier version
+whenever you need to. If you've ever kept a folder full of files like
+`code.R`, `code_v2.R`, `code_v2_final.R`,
+`code_v2_final_ACTUALFINAL.R`, and `code_v2_final_ACTUALFINAL_revised.R`; you've already run into the problem Git solves.
+
+Manually saving multiple copies of a file "just in case" is a fragile
+system. It wastes storage, and worse, it's easy to lose track of which
+version is actually the most recent, or to accidentally overwrite something
+important. Git solves this by tracking a single copy of each file along with
+a full history of every change made to it — you can always recover an
+earlier version without needing separate saved copies cluttering your
+project.
+
+It's worth noting up front that Git is fundamentally a *local* tool: it runs
+on your own computer and doesn't require an internet connection or an
+account anywhere. The collaborative, multi-user features you may associate
+with version control come from connecting Git to an external hosting
+service — GitHub being the most common. This chapter focuses on using Git
+locally; the next chapter covers GitHub and collaboration.
+
+## Creating a GitHub account
+
+Before diving into Git itself, you'll need a GitHub account, since we'll be
+connecting your local repositories to GitHub throughout this course (and
+you've likely already done this if you set up your course textbook repo).
+
+If you don't already have one, go to <https://github.com> and click
+**Sign up**. A few tips when creating your account:
+
+- **Choose a professional username.** This will be visible on any public
+  repositories you create, and often ends up on your resume or CV — think
+  `firstname-lastname` or something similarly clean, rather than an old
+  gamer tag or nickname.
+- **Use an email address you'll have long-term access to.** Many students
+  use their university email, but consider whether you'll still have access
+  to it after graduating — a personal email is usually the safer long-term choice.
+- **Free accounts are sufficient** for everything in this course. GitHub's
+  free tier includes unlimited public and private repositories.
+
+Once your account is created, you're ready to start using Git from the
+command line and connecting it to GitHub.
+
+## Command line basics
+
+Git is typically used from the command line (Terminal on Mac, or Command
+Prompt/PowerShell on Windows). If you haven't used a command line before,
+know that it only takes a small set of commands to use Git comfortably.
+
+When you open a terminal, you'll see a prompt — often a `$` on Mac/Linux or
+a `>` on Windows — followed by a blinking cursor, waiting for input. When
+copying commands from this book, only copy the part *after* the prompt
+symbol, not the symbol itself.
+
+Your terminal opens into a specific folder (your working directory), and
+you navigate between folders using the `cd` ("change directory") command:
+
+- Move into a subfolder: `cd Documents`
+- Move up to the parent folder: `cd ..`
+- Move to your home directory: `cd ~` (Mac/Linux) or `cd \` (Windows, moves
+  to the root directory instead)
+
+You can chain these together — for example, `cd ../..` moves up two levels
+at once.
+
+## Configuring Git
+
+Before using Git for the first time, you need to tell it who you are. This
+identity gets attached to every change you make, which matters once you
+start collaborating with others. Run the following in your terminal,
+substituting your own name and email:
+
+```
+git config --global user.name "First Last"
+git config --global user.email "you@example.com"
+```
+
+The `--global` flag applies these settings to every Git repository on your
+computer. Make sure you use your email address associated with your GitHub account.
+
+To check your current configuration at any time:
+
+```
+git config --list
+```
+
+## Getting help
+
+If you forget how a Git command works, you don't need to leave the
+terminal. Any of the following will pull up documentation for a given Git
+command (Git calls these "verbs"):
+
+```
+git help <verb>
+git <verb> --help
+```
+
+For example, `git help commit` will explain everything the `commit` command
+can do.
+
+## Creating a repository
+
+A **repository** (or "repo") is simply a folder that Git is tracking. To
+turn an ordinary folder into a Git repository, you first need to navigate
+into it in your terminal.
+
+You can type out the path manually using `cd`, but an easier way (especially
+on Mac) is to type `cd ` (with a trailing space, don't press Enter yet),
+then drag the folder from Finder directly into the Terminal window — it
+will automatically fill in the full path for you. Press Enter to confirm.
+
+Once you're in the right folder, run:
+
+```
+git init
+```
+
+This creates a hidden `.git` subfolder, where Git stores all of its
+version history — you don't need to look inside it or interact with it
+directly, but its presence is what makes the folder a repository.
+
+## Tracking files
+
+Initializing a repository doesn't automatically start tracking the files
+inside it — you have to tell Git which files to watch. Check what Git
+currently sees with:
+
+```
+git status
+```
+
+This will list any untracked files. To start tracking a specific file:
+
+```
+git add filename.R
+```
+
+Or to track everything in the current folder at once:
+
+```
+git add .
+```
+
+Be thoughtful when using `git add .`, though. Git is built for tracking
+plain-text files — scripts, RMarkdown documents, YAML files — where it can
+meaningfully record what changed line by line. It doesn't handle binary
+files (images, Word documents, Excel files) the same way, and large or
+frequently-regenerated files can bloat your repository unnecessarily.
+That's what `.gitignore` is for, covered next.
+
+## Ignoring files
+
+A `.gitignore` file tells Git which files or file types to never track,
+even if someone runs `git add .`. This saves you from accidentally
+tracking files you don't want cluttering your project history.
+
+Some common candidates for `.gitignore` rules:
+
+- **Binary files**, since Git can't meaningfully track changes within them
+  (images, PDFs, Word/Excel files)
+- **Code-generated files**, since anything a script can regenerate doesn't
+  need its own tracked history (rendered HTML output, compiled figures)
+- **Large files**, since they slow Git down — GitHub enforces a hard 100 MB
+  limit per file, though if you're already excluding binary and
+  code-generated files you'll rarely approach that
+
+A `.gitignore` file uses pattern matching so you don't have to list every
+file individually. For example:
+
+```
+*.jpg
+*.png
+*.docx
+*.xlsx
+figures/
+manuscript_files/
+.Rhistory
+.Rproj.user/
+```
+
+The `*` wildcard means "any characters," so `*.jpg` excludes every `.jpg`
+file at once. A trailing slash, like `figures/`, excludes an entire folder.
+
+Most of the rules above target file *types* by extension — but the last two,
+`.Rhistory` and `.Rproj.user/`, are specific files and folders that RStudio
+generates automatically:
+
+- `.Rhistory` is a file RStudio creates to log every command you've typed in
+  the Console. It's a running record of your keystrokes, not something you
+  write yourself, and it gets regenerated every time you use R — so there's
+  no reason to track it.
+- `.Rproj.user/` is a hidden folder RStudio creates to store your personal
+  settings for an RStudio Project, like your window layout and which files
+  were open. It's specific to your own computer, so tracking it wouldn't be
+  useful to anyone else opening the project.
+
+## The 3 states
+
+Once a file is tracked by Git, it moves through three possible states:
+**modified**, **staged**, and **committed**.
+
+- A file is **modified** when you've made changes that Git hasn't recorded
+  yet. The new version is saved on your computer, but Git doesn't know about it yet.
+- **Staging** a file (`git add`) marks it as ready to be included in the
+  next commit — think of this as building a list of changes you're about
+  to save.
+- **Committing** (`git commit`) takes everything currently staged and
+  permanently records that snapshot in the file's history.
+
+Note that `git add` serves two different purposes depending on the
+situation: for a brand-new file, it tells Git to start tracking it for the
+first time; for a file Git is already tracking, it stages your latest edits
+so they're ready for the next commit. Either way, you only need to run the
+command once — Git automatically knows which case applies.
+
+To make a commit:
+
+```
+git commit -m "Short description of what changed"
+```
+
+Every commit needs a message (the `-m` flag), and it's worth taking that
+seriously — a clear, specific message ("Fix heading levels in index.Rmd")
+is far more useful to future-you than a vague one ("updates").
+
+## Un-staging files
+
+Sometimes you'll stage a file you didn't mean to — maybe you forgot to add
+a rule to `.gitignore` first. To un-stage a file without committing it:
+
+```
+git rm --cached filename
+```
+
+This removes the file from the staging area but leaves it untouched on
+your computer. Pattern matching works here too, but the wildcard needs a
+backslash in front of it:
+
+```
+git rm --cached \*.jpg
+```
+
+## Recovering a previous version of a file
+
+This is where Git's real power shows up. Because every commit is a
+snapshot in time, you can always go back and retrieve an earlier version of
+a file. Start by viewing your commit history:
+
+```
+git log
+```
+
+Each entry shows a commit message and a long string of letters and numbers
+called a **hash**, which uniquely identifies that commit. Descriptive
+commit messages pay off here — they make it much easier to scan the log
+and recognize which commit you're looking for.
+
+To restore a specific file to how it looked at a given commit:
+
+```
+git checkout <hash> -- filename.ext
+```
+
+## Removing Git
+
+If you ever want to stop version-controlling a folder entirely — turning it
+back into a regular, untracked folder — you can delete Git's hidden
+tracking folder:
+
+```
+rm -rf .git
+```
+
+Use this with caution: it permanently discards the entire commit history
+for that folder.
+
+## Git everyday
+
+Most of the commands in this chapter — configuring your identity,
+initializing a repository, setting up `.gitignore` — are things you'll only
+do once, or once per new project. In your regular day-to-day use of Git,
+the commands you'll reach for constantly are just `git add` and
+`git commit`. Everything else here is worth knowing, but you can always
+come back to this chapter (or search online) when you need it.
+
+## In-class Exercise: Practicing Git Basics
+
+For this exercise, you'll create a small practice repository and put the
+commands from this chapter to use. This is a local exercise — you won't
+need GitHub yet (that's next chapter).
+
+1. **Create a practice folder.** Somewhere on your computer (not inside your
+   course-repo folder), create a new folder called `git-practice`.
+
+2. **Initialize it as a Git repository.** Navigate into the folder in your
+   terminal and run `git init`.
+
+3. **Create a few files.** Inside `git-practice`, create two plain-text
+   files: `notes.txt` (with a sentence or two of any text) and
+   `data-summary.R` (an R script — a comment or two is fine, it doesn't need
+   to run anything), and save them in the folder.
+
+4. **Check Git's status.** Run `git status`. You should see both files
+   listed as untracked.
+
+5. **Start tracking your files and make your first commit.** Stage both
+   files and commit them with a descriptive message.
+
+6. **Create a `.gitignore` file.** Add a rule to ignore `.Rhistory` and
+   `.Rproj.user/`, then create a dummy `.Rhistory` file in the folder to
+   confirm — running `git status` afterward should show it's being ignored,
+   not listed as untracked.
+
+7. **Make an edit.** Open `notes.txt` and add a new sentence. Run
+   `git status` again — notice how Git now describes this file differently
+   than it did for a brand-new untracked file.
+
+8. **Stage and commit the edit**, with a new commit message describing what
+   changed.
+
+9. **View your history.** Run `git log` and find the hash for your first
+   commit.
+
+10. **Recover the old version.** Use `git checkout <hash> -- notes.txt` to
+    revert `notes.txt` back to its original content. Open the file to
+    confirm the edit from step 7 is gone.
+
+### What to submit in Canvas
+
+Take a screenshot of your terminal after running `git log` (showing both
+commits), and briefly describe (2–3 sentences) what happened when you
+recovered the earlier version of `notes.txt` in step 10.
+
+## References
+
+- The Carpentries lesson on Version Control with Git:
+  <http://swcarpentry.github.io/git-novice/>
+- *Pro Git* book by Scott Chacon and Ben Straub: <https://git-scm.com/book/en/v2>

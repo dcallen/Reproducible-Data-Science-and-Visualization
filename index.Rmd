@@ -31,6 +31,7 @@ the same terms.
 The content is organized into the following chapters:
 
 - Chapter 1: Project Organization
+- Chapter 2: Version Control with Git
 
 ## Final Project
 

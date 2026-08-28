@@ -22,7 +22,7 @@ my_project/
 ├── output/
 │   ├── figures/        # plots and visualizations
 │   └── tables/         # summary tables, model outputs
-├── docs/               # notes, README files, other documentation
+└── docs/               # notes, README files, other documentation
 └── manuscript_files/   # finalized manuscript files for submission
 ```
 
@@ -93,8 +93,7 @@ to the parent folder." Consider this folder structure:
 Documents/
 └── Research/
 ├── Data/
-└── Frogs/
-└── data-cleaning.Rproj
+└── Frogs/data-cleaning.Rproj
 ```
 
 If your working directory is `Data`, you could navigate to the `.Rproj`
@@ -152,8 +151,7 @@ Good file organization only gets you so far — at some point, someone (often
 future you) needs a plain-language explanation of what a project is, how it's
 organized, and how to reproduce it. That's the job of a **README** file.
 
-Every project folder should include a `README.md` file at the top level. At a
-minimum, a good README should contain:
+Every project folder should include a `README.md` or `README.txt` file at the top level. At a minimum, a good README should contain:
 
 - **Project title and short description** — what is this project, and what
   question or problem does it address?
@@ -178,8 +176,8 @@ READMEs are typically written in in text files (.txt) or Markdown files (.md).
   when you come back to your project to find some old data.
 
 A README doesn't need to be long. The goal is simply that anyone — including
-you, six months from now — can open the project folder and understand what's
-going on without having to dig through code.
+you, at some point in the future after you've long forgotten about this project — 
+can open the project folder and understand what's going on without having to dig through code.
 
 ## Final Project: Topic and Dataset Selection
 
