@@ -65,6 +65,21 @@ you navigate between folders using the `cd` ("change directory") command:
 You can chain these together — for example, `cd ../..` moves up two levels
 at once.
 
+**Pro Tip: pasting a file path instead of typing it out.** Rather than typing
+out a long path by hand (and risking a typo), you can drag and drop, or
+copy and paste:
+
+- **On Mac:** in Terminal, type `cd ` (with a trailing space, don't press
+  Enter yet), then drag the folder from Finder directly into the Terminal
+  window. It will automatically fill in the full path — press Enter to
+  confirm. Alternatively, in Finder, hold **Option** and right-click the
+  folder — the menu will show "Copy [name] as Pathname," which copies the
+  full path to your clipboard so you can paste it directly after `cd `.
+- **On Windows:** in File Explorer, navigate to the folder you want, then
+  click into the address bar at the top and copy the path shown there. In
+  Command Prompt, type `cd ` (with a trailing space), right-click to paste
+  the path, and press Enter.
+
 ## Configuring Git
 
 Before using Git for the first time, you need to tell it who you are. This
@@ -155,6 +170,36 @@ That's what `.gitignore` is for, covered next.
 A `.gitignore` file tells Git which files or file types to never track,
 even if someone runs `git add .`. This saves you from accidentally
 tracking files you don't want cluttering your project history.
+
+To create one, make a new plain-text file in your repository's top-level
+folder named exactly `.gitignore` — no file extension, and note the leading
+period. You can create this using any plain-text editor (TextEdit on Mac,
+Notepad on Windows), or directly from RStudio via **File > New File > Text
+File**, saving it as `.gitignore`.
+
+A couple of things to watch for:
+
+- **On Windows:** Notepad and File Explorer may refuse to let you name a
+  file starting with a period, or may silently add a `.txt` extension. If
+  this happens, create the file with any name first, then rename it in File
+  Explorer — or use the RStudio method above, which avoids the issue
+  entirely. You may also need to enable "File name extensions" in File
+  Explorer's View tab to confirm the name saved correctly (it should read
+  `.gitignore` with nothing after it).
+- **On Mac:** make sure TextEdit doesn't add a hidden `.txt` extension
+  behind the scenes — the file needs to be named `.gitignore`, not
+  `.gitignore.txt`. Since it starts with a period, `.gitignore` is also a
+  hidden file in Finder; you may need to enable "show hidden files"
+  (Cmd+Shift+.) to see it after creating it.
+
+A couple of things to watch for:
+
+- Make sure your text editor doesn't add a hidden `.txt` extension behind
+  the scenes — the file needs to be named `.gitignore`, not
+  `.gitignore.txt`.
+- Since it starts with a period, `.gitignore` is a hidden file. You may need
+  to enable "show hidden files" in Finder (Cmd+Shift+.) to see it after
+  creating it.
 
 Some common candidates for `.gitignore` rules:
 
