@@ -43,6 +43,36 @@ If you don't already have one, go to <https://github.com> and click
 Once your account is created, you're ready to start using Git from the
 command line and connecting it to GitHub.
 
+## Installing Git
+
+Before you can use any of the commands in this chapter, Git needs to be
+installed on your computer.
+
+**On Mac:** Git is not installed by default, but installing Apple's Command
+Line Developer Tools will install it for you. Open Terminal and run:
+
+```
+xcode-select --install
+```
+
+This will prompt a popup asking you to install the tools — click Install,
+and wait a few minutes for it to finish. Confirm the installation worked by
+running `git --version` (with a space between `git` and `--version`); you
+should see a version number printed.
+
+**On Windows:** Git isn't installed by default either. Download the
+installer from <https://git-scm.com/download/win> and run it. The installer
+will walk you through several setup screens — the default options are fine
+for almost all of them, but pay close attention to the step titled
+**"Adjusting your PATH environment"**: make sure the option **"Git from the
+command line and also from 3rd-party software"** is selected. This is what
+allows you to run `git` commands from Command Prompt or PowerShell — if you
+skip this, Git will be installed but your terminal won't recognize the
+`git` command.
+
+Once installed, confirm it worked by opening Command Prompt and running
+`git --version`.
+
 ## Command line basics
 
 Git is typically used from the command line (Terminal on Mac, or Command
@@ -136,6 +166,15 @@ This creates a hidden `.git` subfolder, where Git stores all of its
 version history — you don't need to look inside it or interact with it
 directly, but its presence is what makes the folder a repository.
 
+Since `.git` and `.gitignore` both start with a period, they're hidden by
+default in your file browser. To view them:
+
+- **On Mac:** in Finder, press **Cmd+Shift+.** (period) to toggle hidden
+  files on or off.
+- **On Windows:** in File Explorer, click the **View** tab, then check the
+  box for **"Hidden items"** (older versions of Windows: View tab →
+  Options → View → select "Show hidden files, folders, and drives").
+
 ## Tracking files
 
 Initializing a repository doesn't automatically start tracking the files
@@ -223,6 +262,7 @@ figures/
 manuscript_files/
 .Rhistory
 .Rproj.user/
+.Rdata
 ```
 
 The `*` wildcard means "any characters," so `*.jpg` excludes every `.jpg`
@@ -240,6 +280,13 @@ generates automatically:
   settings for an RStudio Project, like your window layout and which files
   were open. It's specific to your own computer, so tracking it wouldn't be
   useful to anyone else opening the project.
+  
+It's worth being clear about where `.gitignore` lives: it goes in your
+**repository's top-level folder** — the same folder where your `.Rmd`
+files, scripts, and other project content live — not inside the hidden
+`.git` subfolder. The `.git` subfolder is managed entirely by Git itself and
+you should never manually add, edit, or remove files inside it. `.gitignore`
+is simply a regular file that happens to sit alongside `.git`, not within it.
 
 ## The 3 states
 
@@ -297,17 +344,29 @@ a file. Start by viewing your commit history:
 git log
 ```
 
-Each entry shows a commit message and a long string of letters and numbers
-called a **hash**, which uniquely identifies that commit. Descriptive
-commit messages pay off here — they make it much easier to scan the log
-and recognize which commit you're looking for.
+Each entry in the log shown by `git log` represents one commit, and includes
+a long string of letters and numbers called a **hash** (for example,
+`9c5d9a3f52b7d43c1c0a06a94b11df5c3051ca27`). Think of a hash as a unique ID
+number for that specific commit — no two commits ever share the same hash,
+so it's how Git tells commits apart. You don't need to memorize or type out
+a full hash; copying just the first 7–8 characters is normally enough for
+Git to recognize which commit you mean.
+
+To restore a specific file to how it looked at a given commit, use
+`git checkout` followed by that commit's hash, two dashes, and the filename:
 
 To restore a specific file to how it looked at a given commit:
 
 ```
 git checkout <hash> -- filename.ext
 ```
-
+Breaking this down: `git checkout` is the command; the hash tells Git
+*which version in history* to pull from; the `--` separates the commit hash
+from the filename that follows (this prevents Git from confusing a filename
+with a branch name, which `checkout` is also used for); and `filename.ext`
+is the specific file you want restored. After running this, that file will
+revert to exactly how it looked at that commit — but note that this change
+itself isn't saved to history until you stage and commit it again.
 ## Removing Git
 
 If you ever want to stop version-controlling a folder entirely — turning it
@@ -336,8 +395,7 @@ For this exercise, you'll create a small practice repository and put the
 commands from this chapter to use. This is a local exercise — you won't
 need GitHub yet (that's next chapter).
 
-1. **Create a practice folder.** Somewhere on your computer (not inside your
-   course-repo folder), create a new folder called `git-practice`.
+1. **Create a practice folder.** Somewhere on your computer, create a new folder called `git-practice`.
 
 2. **Initialize it as a Git repository.** Navigate into the folder in your
    terminal and run `git init`.
@@ -346,17 +404,17 @@ need GitHub yet (that's next chapter).
    files: `notes.txt` (with a sentence or two of any text) and
    `data-summary.R` (an R script — a comment or two is fine, it doesn't need
    to run anything), and save them in the folder.
-
-4. **Check Git's status.** Run `git status`. You should see both files
-   listed as untracked.
-
-5. **Start tracking your files and make your first commit.** Stage both
-   files and commit them with a descriptive message.
-
-6. **Create a `.gitignore` file.** Add a rule to ignore `.Rhistory` and
+   
+4. **Create a `.gitignore` file.** Add a rule to ignore `.Rhistory` and
    `.Rproj.user/`, then create a dummy `.Rhistory` file in the folder to
    confirm — running `git status` afterward should show it's being ignored,
    not listed as untracked.
+
+5. **Check Git's status.** Run `git status`. You should see both files
+   listed as untracked.
+
+6. **Start tracking your files and make your first commit.** Stage both
+   files and commit them with a descriptive message.
 
 7. **Make an edit.** Open `notes.txt` and add a new sentence. Run
    `git status` again — notice how Git now describes this file differently
