@@ -1,0 +1,410 @@
+# Collaborative Science with GitHub
+
+In the last chapter, we covered how Git works locally on your own computer.
+Now we'll connect that local repository to GitHub, which lets you back up
+your work remotely and collaborate with others.
+
+A **remote repository** is a copy of your repository stored somewhere other
+than your own computer — in our case, on GitHub's servers. Most commonly,
+you'll have a **local repository** on your machine and a **remote
+repository** on GitHub that mirrors it. Keeping the two synchronized is what
+lets you collaborate: your changes get pushed up to GitHub, and your
+collaborators' changes get pulled down to your machine.
+
+There are two ways to set up a local-remote pair. You can start with a
+local repository and connect it to a new, empty remote — this is the
+approach you already used when you set up your course textbook repo. Or you
+can start with a repository that already exists on GitHub and download
+("clone") a copy of it to your computer — useful when joining a project
+that someone else already started.
+
+## Adding a remote to a local repository
+
+If you already have a Git repository on your computer (created with
+`git init`), you can connect it to a GitHub repository by adding a
+**remote** — essentially, a saved address pointing to where the remote copy
+lives.
+
+First, create an empty repository on GitHub: click the **+** icon in the
+top-right corner of any GitHub page and select **New repository**. Give it
+a name — often the same name as your local folder, for consistency, though
+this isn't required. Leave the repository completely empty: don't add a
+README, `.gitignore`, or license through GitHub's interface. If the remote
+repository already has content when you try to connect it to your local
+one, Git will see them as conflicting and won't be able to link them
+cleanly.
+
+Once created, GitHub will show you the repository's URL. Copy it, then run
+the following in your terminal (from inside your local repository folder):
+
+```
+git remote add origin https://github.com/your-username/your-repo.git
+```
+
+`origin` is the conventional name for a repository's primary remote.
+Technically you could name it anything, but since GitHub defaults to
+`origin` and virtually every Git tutorial assumes this name, there's rarely
+a good reason to deviate from it.
+
+To confirm the remote was added correctly:
+
+```
+git remote -v
+```
+
+A repository can have multiple **branches** — we'll cover what that means
+later in this chapter — but every repository has at least one, its default
+or "main" branch. Make sure yours is named `main` (rather than the older
+default name, `master`):
+
+```
+git branch -M main
+```
+
+## Pushing to a remote repository
+
+**Pushing** transfers an exact copy of your local repository's files up to
+the remote. The first time you push a given branch, it's standard to also
+tell Git which remote branch your local branch should sync with going
+forward, using the `-u` (upstream) flag:
+
+```
+git push -u origin main
+```
+
+Here, `main` refers to the name of the branch you're pushing — right now,
+it's the only branch that exists in your repository, so there's no
+ambiguity yet. (Later in this chapter, you'll learn that a repository can
+have multiple branches. When that's the case, each one can be pushed and
+synced independently — but for now, just know that `main` is what your one
+branch happens to be called.)
+
+The `-u` flag tells Git to remember the pairing between your local `main`
+branch and the remote `main` branch on `origin`. Once that pairing is set,
+future pushes to this branch can just be `git push`, with no need to
+specify `origin main` every time.
+
+This only needs to be done once per branch. After that, pushing new commits
+is as simple as:
+
+```
+git push
+```
+
+You'll be prompted to authenticate the first time you push. GitHub does 
+not accept your account password for this — instead, you'll need a 
+**Personal Access Token (PAT)**, a long string of characters that functions 
+like a password specifically for command-line operations like this one.
+
+To generate one: on GitHub, click your profile picture (top right) →
+**Settings** → scroll to the bottom of the left sidebar → **Developer
+settings** → **Personal access tokens** → **Tokens (classic)** →
+**Generate new token** → **Generate new token (classic)**. Give it a
+name, set an expiration date, and check the box for the **repo** scope
+(this grants push/pull access to your repositories). Click **Generate
+token**, then copy it immediately — GitHub will only show it to you once.
+
+When prompted for a username, enter your GitHub username. When prompted for
+a password, paste your token instead of your actual account password.
+
+Once you push, your local and remote repositories mirror each other. From
+here on, your everyday workflow gains one more step: **add, commit, push.**
+
+## Cloning a repository
+
+The other way to set up a local-remote pair is to create the repository on
+GitHub first, then **clone** it — download a full copy — onto your
+computer. In this case, the remote repository doesn't need to be empty; in
+fact, it's common to include a README when creating it this way.
+
+Cloning is especially useful for joining a project someone else already
+started. If you're added as a collaborator on their repository, cloning
+gives you a local copy that stays synchronized with the shared remote.
+
+To clone their repository, navigate to the folder where you want the copy to
+live, then run:
+
+```
+git clone https://github.com/their-username/their-repo.git
+```
+
+Git will create a new folder (named after the repository) containing a full
+copy of the project, already connected to the remote as `origin`.
+
+## Synchronizing changes among collaborators
+
+The reverse of pushing is **pulling** — downloading changes from the remote
+repository into your local copy:
+
+```
+git pull
+```
+
+When collaborating, you'll pull periodically to stay synchronized with
+whatever your collaborators have pushed. You'll also need to pull before
+you push your own changes whenever the remote has commits your local copy
+doesn't — Git won't let you push otherwise. If your local and remote copies
+are already in sync, running `git pull` simply does nothing.
+
+If a collaborator has changed the same part of a file you've also changed,
+pulling will trigger a **merge conflict**, which Git can't resolve
+automatically.
+
+## Resolving conflicts
+
+Merge conflicts are a normal, expected part of collaborative work — not a
+sign that something has gone wrong. If you try to push while the remote has
+changes you don't have locally, you'll see something like:
+
+```
+! [rejected]        main -> main (fetch first)
+error: failed to push some refs to 'https://github.com/username/repo.git'
+hint: Updates were rejected because the remote contains work that you do
+hint: not have locally. This is usually caused by another repository pushing
+hint: to the same ref. You may want to first integrate the remote changes
+hint: (e.g., 'git pull ...') before pushing again.
+```
+
+To resolve this, pull the latest changes, merge them with your own, and
+push the result.
+
+When you pull and there's a genuine conflict — the same lines of a file
+edited differently by two people — Git won't silently pick one version over
+the other. Instead, it marks the conflicting section directly inside the
+file, showing both versions separated by a line of `=` signs, with markers
+indicating where each version begins and ends.
+
+From there, it's up to you to decide how to reconcile the conflict: keep
+your version, keep your collaborator's, write something new that combines
+both, or remove the change entirely. Once you've edited the file to remove
+the conflict markers and saved it, continue as normal: stage it, commit it,
+and push. The next time your collaborators pull, they'll receive the
+resolved version.
+
+It's worth noting that a merge conflict doesn't require the two edits to
+actually contradict each other — any time two people edit the *same line*
+of the *same file* around the same time, Git flags it as a conflict to be
+safe, even if the changes could technically coexist. Resolving it just
+means confirming, by hand, whether both edits should be kept.
+
+## Avoiding conflicts
+
+Since resolving a conflict always requires a human judgment call, it's
+generally better to avoid them in the first place. A few habits help:
+
+- **Pull often** — the more current your local copy is, the less likely
+  your changes will collide with someone else's.
+- **Make small, frequent commits** — smaller changes are less likely to
+  overlap with a collaborator's edits than large, infrequent ones.
+- **Keep code organized into smaller, focused files** — reduces the odds
+  that two people are working in the same file at the same time.
+- **Divide project tasks along clear lines of ownership** — agree as a team
+  on who leads which piece of the project (e.g., one person owns the data
+  cleaning script, another owns the visualization script, another owns the
+  statistical analysis), so that any given file is normally being edited by
+  only one person at a time.
+- **Use branches or forks** for larger or more experimental changes — more
+  on this next.
+
+Dividing work this way is often the single most effective way to avoid
+conflicts, since most merge conflicts happen when two people edit the same
+file around the same time. If your project's structure naturally routes
+each collaborator into their own file or folder, conflicts become the
+exception rather than the norm. This doesn't mean collaborators can't ever
+touch the same file — just that it's worth having an explicit conversation
+about ownership early on, rather than letting it happen by accident.
+
+## Working with branches
+
+By default, a repository has a single branch — its main branch. But you can
+create additional branches to work on changes in isolation. Think of a
+branch as a parallel version of your project: any commits you make on that
+branch exist only there, without affecting the main branch, until you
+choose to merge them back in.
+
+Branches are especially useful for trying out significant changes without
+risking your main, working version of the project. Let's say you submitted
+your manuscript to a journal for peer review, and Reviewer 2 is asking for
+changes you're not sure you agree with. You could create a new branch to
+try out their suggested changes. If you like the result, you merge the
+branch back into your main manuscript; if not, you simply delete the branch
+and your original version is untouched.
+
+To create a new branch:
+
+```
+git branch my-branch
+```
+
+To switch to it:
+
+```
+git checkout my-branch
+```
+
+Or do both in a single command:
+
+```
+git checkout -b my-branch
+```
+
+(the `-b` flag stands for "branch").
+
+To confirm which branch you're currently on, `git log` will show `HEAD` —
+a pointer indicating your current position — next to the relevant branch.
+
+A new branch starts out sharing the same commit history as the branch it
+was created from; after that point, the two histories can diverge freely.
+Changes committed to your branch have no effect on the main branch until
+you merge them:
+
+```
+git merge my-branch
+```
+
+Once merged, you can delete the branch if it's no longer needed:
+
+```
+git branch -d my-branch
+```
+
+If the two branches have conflicting changes, merging will trigger the same
+kind of merge conflict discussed earlier, which you'll resolve the same
+way.
+
+## Forking a repository
+
+**Forking** creates your own copy of someone else's repository on your
+GitHub account, which you're free to modify without affecting their
+original. This is different from cloning: forking happens on GitHub itself
+first, creating a new remote repository under your own account, which you
+can then clone locally if you want a working copy on your computer.
+
+Forking is especially useful for contributing to a project you don't own —
+for example, building on someone's published code, or proposing a change to
+an open-source tool.
+
+Unlike everything else in this chapter, forking is a GitHub feature, not a
+Git command — there's no way to fork from the terminal. To fork a
+repository, go to its page on GitHub and click **Fork** in the top-right
+corner. This creates a copy under your own account.
+
+If you also want a local copy, clone your fork the same way you'd clone any
+other repository:
+
+```
+git clone https://github.com/your-username/forked-repo.git
+```
+
+To keep your fork up to date with the original repository (often called the
+**upstream** repository), add it as an additional remote:
+
+```
+git remote add upstream https://github.com/original-owner/original-repo.git
+```
+
+This lets you pull in any updates the original author makes. You won't be
+able to push directly to their repository unless they've added you as a
+collaborator — pull requests (next section) are how you propose changes
+back to them instead.
+
+## Pull requests
+
+A **pull request** is how you propose merging your changes — whether from a
+branch or a fork — into someone else's repository (or into your project's
+main branch, if you're working with collaborators). If you're contributing
+to someone else's project via a fork, a pull request is the only way to
+have your changes considered for inclusion; you have no direct write access
+to their repository. If you're a collaborator working within a shared
+repository, you technically could merge your own changes directly — but
+submitting a pull request is still good practice, since it gives your
+collaborators a chance to review your changes before they become part of
+the shared history.
+
+To open a pull request, you'll need some committed changes on the branch or
+fork you want merged. From the repository's page on GitHub, click the
+**Pull requests** tab, then **New pull request**. Choose the branch you
+want to merge, add a title and description explaining your changes, and
+submit it. From there, anyone with access can comment on the pull request,
+review the specific changes, and see the full list of commits it includes.
+
+Once everyone involved is satisfied with the proposed changes and there are
+no conflicts, the pull request can be merged with a single click.
+
+## In-Class Activity: Practicing GitHub Collaboration
+
+For this activity, pair up with a classmate. You'll take turns playing the
+role of "repository owner" and "collaborator" so everyone experiences both
+sides of a collaborative workflow — including resolving a merge conflict on
+purpose.
+
+### Part 1: Set up a shared repository
+
+1. One partner (the **owner**) creates a new, empty repository on GitHub
+   (don't add a README, `.gitignore`, or license).
+2. The owner goes to the repository's **Settings > Collaborators** and adds
+   the other partner as a collaborator. The collaborator will need to
+   accept the invitation (usually sent by email or visible under their
+   GitHub notifications).
+3. The **collaborator** clones the repository to their own computer:
+
+   ```
+   git clone https://github.com/owner-username/repo-name.git
+   ```
+
+4. The **owner** creates a local repository on their own computer (using
+   `git init` in a new folder, or reusing an existing local repo they'd
+   like to connect), adds a file called `team-notes.md` with a sentence of
+   any text, then adds the remote, stages, commits, and pushes:
+
+   ```
+   git remote add origin https://github.com/owner-username/repo-name.git
+   git branch -M main
+   git add .
+   git commit -m "Add team notes file"
+   git push -u origin main
+   ```
+
+### Part 2: Synchronize changes
+
+5. The **collaborator** pulls the owner's changes:
+
+   ```
+   git pull
+   ```
+
+   Confirm `team-notes.md` now appears in their local copy.
+
+6. The **collaborator** adds a new sentence to `team-notes.md`, then stages,
+   commits, and pushes their edit.
+
+7. The **owner** pulls to receive the collaborator's edit and confirms it
+   appears in their local copy.
+
+### Part 3: Create and resolve a merge conflict (on purpose)
+
+8. **Without pulling first**, both partners simultaneously edit the *same
+   line* of `team-notes.md` on their own computers (agree ahead of time on
+   which line).
+
+9. Whoever pushes **first** should succeed normally. Whoever pushes
+   **second** will get a rejected push error, similar to what's shown
+   earlier in this chapter.
+
+10. The second person pulls, and should see conflict markers appear
+    directly inside `team-notes.md`. Work together to resolve the conflict
+    by editing the file to keep, combine, or discard the two versions, then
+    stage, commit, and push the resolved file.
+
+11. The first partner pulls one more time to confirm they now see the
+    merged, conflict-free version.
+
+### What to submit
+
+As a pair, submit a short paragraph (3–5 sentences) describing what the
+conflict markers looked like inside the file, and how you decided to
+resolve the conflict.
+
+## References
+
+- GitHub Community Forum: <https://github.community/>
