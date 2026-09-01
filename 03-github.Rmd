@@ -91,24 +91,67 @@ is as simple as:
 git push
 ```
 
+Once you push, your local and remote repositories mirror each other. From
+here on, your everyday workflow gains one more step: **add, commit, push.**
+
+### Token authentication
+
 You'll be prompted to authenticate the first time you push. GitHub does 
 not accept your account password for this — instead, you'll need a 
 **Personal Access Token (PAT)**, a long string of characters that functions 
 like a password specifically for command-line operations like this one.
 
-To generate one: on GitHub, click your profile picture (top right) →
-**Settings** → scroll to the bottom of the left sidebar → **Developer
-settings** → **Personal access tokens** → **Tokens (classic)** →
-**Generate new token** → **Generate new token (classic)**. Give it a
-name, set an expiration date, and check the box for the **repo** scope
-(this grants push/pull access to your repositories). Click **Generate
-token**, then copy it immediately — GitHub will only show it to you once.
+Give it a name, set an expiration date, and choose which **scopes** to
+grant. Scopes control what the token is allowed to do — GitHub lists many
+options here, covering everything from managing organizations to deleting
+repositories, but for this course you'll only need to check the box for
+**repo** (this grants push/pull access to your repositories). Leave
+everything else unchecked; it's good practice to grant a token only the
+permissions it actually needs, rather than checking every box "just in
+case."
+
+One exception: if you're pushing changes to a file inside
+`.github/workflows/` (as you will be, later in this course, when
+publishing your own site), you'll also need to check the **workflow**
+scope — without it, Git will reject the push with an error about
+insufficient permissions for workflow files.
 
 When prompted for a username, enter your GitHub username. When prompted for
 a password, paste your token instead of your actual account password.
 
-Once you push, your local and remote repositories mirror each other. From
-here on, your everyday workflow gains one more step: **add, commit, push.**
+One thing that trips people up: when you paste (or type) your token,
+nothing will visibly appear on screen — no characters, no dots, nothing.
+This is normal, expected behavior for password-style prompts in the
+terminal, not a sign that something's broken. Just paste and press Enter as
+usual, even though it looks like nothing happened.
+
+When you generated your token, you set an expiration date — after that
+date passes, GitHub will reject it, and your next `git push` (or `pull`,
+`clone`, etc.) will fail with an authentication error. This is a security
+feature, not a bug: expiring tokens limits the damage if one is ever
+accidentally exposed.
+
+When your token expires, you'll need to generate a new one following the
+same steps above, then use it the next time you're prompted to
+authenticate. Your computer may still be holding onto the old, expired
+token in the background (via macOS Keychain or Windows Credential Manager)
+— if Terminal doesn't prompt you for a new one at all, that's usually why.
+In that case, you'll need to remove the saved credential first before Git
+will ask you again:
+
+- **On Mac:** open **Keychain Access** (search for it with Spotlight),
+  search for "github.com," and delete any matching entries. Then retry your
+  `git push`.
+- **On Windows:** open **Credential Manager** (search for it in the Start
+  menu), go to **Windows Credentials**, find any entries related to
+  `git:https://github.com`, and remove them. Then retry.
+
+A shorter expiration (like 30 or 90 days) is more secure but means you'll
+repeat this process more often; a longer expiration is more convenient but
+riskier if the token is ever leaked. For this course, 90 days is a
+reasonable default.
+
+
 
 ## Cloning a repository
 
