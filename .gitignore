@@ -7,3 +7,8 @@ course-book.Rmd
 _main.Rmd
 /docs/
 .DS_Store
+*.pdf
+*.jpg
+*.png
+*.docx
+*.xlsx

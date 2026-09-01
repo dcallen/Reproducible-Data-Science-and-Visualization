@@ -32,6 +32,7 @@ The content is organized into the following chapters:
 
 - Chapter 1: Project Organization
 - Chapter 2: Version Control with Git
+- Chapter 3: Collaborative Science with GitHub
 
 ## Final Project
 
