@@ -1,3 +1,41 @@
+## The 3-2-1 rule
+
+Before diving into GitHub specifically, it's worth understanding the
+broader principle it fits into: the **3-2-1 rule**, a widely used data
+management guideline for avoiding data loss. It states that you should
+have:
+
+- **3** total copies of your data
+- on **2** different types of storage media
+- with **1** copy stored off-site
+
+Applied to a research project, this might look like: your working copy on
+your laptop's hard drive (1), a backup on an external hard drive (2, a
+different storage medium), and a copy stored somewhere off-site (3) — which
+could be a university server, a cloud storage service, or, relevantly to
+this course, GitHub.
+
+GitHub satisfies the off-site, cloud-based copy in this scheme neatly:
+every time you push, a full copy of your repository's history is stored on
+GitHub's servers, physically separate from your computer. If your laptop is
+lost, stolen, or its hard drive fails, your pushed work is still fully
+recoverable.
+
+It's worth being clear about what this does and doesn't cover, though.
+GitHub works well for code, scripts, and plain-text data files like CSVs —
+anything Git can meaningfully track line by line (see Chapter 2). It's less
+suited to binary files (like Excel spreadsheets or images) or very large
+datasets — GitHub enforces a hard 100 MB limit per file, and repositories
+bloated with large files become slow to work with. For sizable raw
+datasets, a university server, an external drive, or a dedicated data
+repository is usually a better fit.
+
+Whether GitHub covers your entire backup strategy or just one piece of it
+depends on your specific project — a project built entirely around code,
+scripts, and small text-based datasets might be fully covered by GitHub
+alone, while a project involving large raw datasets, imagery, or other
+binary files will need additional backup solutions alongside it.
+
 # Collaborative Science with GitHub
 
 In the last chapter, we covered how Git works locally on your own computer.
@@ -11,12 +49,11 @@ repository** on GitHub that mirrors it. Keeping the two synchronized is what
 lets you collaborate: your changes get pushed up to GitHub, and your
 collaborators' changes get pulled down to your machine.
 
-There are two ways to set up a local-remote pair. You can start with a
-local repository and connect it to a new, empty remote — this is the
-approach you already used when you set up your course textbook repo. Or you
+There are two ways to set up a local-remote pair. One is to start with a
+local repository and connect it to a new, empty remote. Or you
 can start with a repository that already exists on GitHub and download
 ("clone") a copy of it to your computer — useful when joining a project
-that someone else already started.
+that someone else already started. We'll cover both ways below.
 
 ## Adding a remote to a local repository
 
@@ -24,6 +61,13 @@ If you already have a Git repository on your computer (created with
 `git init`), you can connect it to a GitHub repository by adding a
 **remote** — essentially, a saved address pointing to where the remote copy
 lives.
+
+Before doing anything else, make sure your terminal is inside the correct
+local repository — the folder containing the `.git` subfolder you want to
+connect. Run `pwd` to confirm your current location, and `git status` to
+confirm Git recognizes it as a repository. If you're in the wrong folder,
+navigate to the right one with `cd` (see the tips on pasting file paths in
+Chapter 2) before continuing.
 
 First, create an empty repository on GitHub: click the **+** icon in the
 top-right corner of any GitHub page and select **New repository**. Give it
@@ -101,6 +145,11 @@ not accept your account password for this — instead, you'll need a
 **Personal Access Token (PAT)**, a long string of characters that functions 
 like a password specifically for command-line operations like this one.
 
+To generate one: on GitHub, click your profile picture (top right corner
+of any page) → **Settings** → scroll to the very bottom of the left
+sidebar → **Developer settings** → **Personal access tokens** → **Tokens
+(classic)** → **Generate new token** → **Generate new token (classic)**.
+
 Give it a name, set an expiration date, and choose which **scopes** to
 grant. Scopes control what the token is allowed to do — GitHub lists many
 options here, covering everything from managing organizations to deleting
@@ -115,6 +164,11 @@ One exception: if you're pushing changes to a file inside
 publishing your own site), you'll also need to check the **workflow**
 scope — without it, Git will reject the push with an error about
 insufficient permissions for workflow files.
+
+Click **Generate token** at the bottom of the page. GitHub will show you
+the token exactly once — copy it immediately, since you won't be able to
+view it again after leaving the page. If you lose it, you'll need to
+generate a new one from scratch.
 
 When prompted for a username, enter your GitHub username. When prompted for
 a password, paste your token instead of your actual account password.
@@ -151,8 +205,6 @@ repeat this process more often; a longer expiration is more convenient but
 riskier if the token is ever leaked. For this course, 90 days is a
 reasonable default.
 
-
-
 ## Cloning a repository
 
 The other way to set up a local-remote pair is to create the repository on
@@ -173,6 +225,39 @@ git clone https://github.com/their-username/their-repo.git
 
 Git will create a new folder (named after the repository) containing a full
 copy of the project, already connected to the remote as `origin`.
+
+## Adding a collaborator
+
+By default, only the owner of a repository can push changes to it — anyone
+else attempting to push (even if they've cloned it) will get a permission
+error. To let someone else contribute directly, you need to add them as a
+**collaborator**.
+
+From the repository's page on GitHub, go to **Settings** → **Collaborators**
+(in the left sidebar, under "Access"). Click **Add people**, then search for
+your collaborator by their GitHub username or the email associated with
+their account. Select them and confirm.
+
+GitHub will send them an invitation — usually via email, and also visible
+under their notifications on GitHub itself. They'll need to explicitly
+accept it before their access takes effect; simply being added isn't
+enough on its own.
+
+Once accepted, your collaborator has push and pull access to the
+repository, and can clone it, create branches, and push changes directly,
+following the same workflow covered in this chapter.
+
+A couple of things worth knowing:
+
+- **Collaborator access applies to the whole repository**, not just
+  specific files or folders. If you need more granular control over who can
+  change what, that typically requires GitHub's paid organization plans
+  with branch protection rules — outside the scope of this course, but
+  good to know exists.
+- **This is different from forking.** Adding someone as a collaborator
+  gives them direct write access to your repository. Forking (covered
+  later in this chapter) is for people *without* that access, who want to
+  propose changes via a pull request instead.
 
 ## Synchronizing changes among collaborators
 
@@ -208,27 +293,68 @@ hint: to the same ref. You may want to first integrate the remote changes
 hint: (e.g., 'git pull ...') before pushing again.
 ```
 
-To resolve this, pull the latest changes, merge them with your own, and
-push the result.
+To resolve this, start by pulling:
 
-When you pull and there's a genuine conflict — the same lines of a file
-edited differently by two people — Git won't silently pick one version over
-the other. Instead, it marks the conflicting section directly inside the
-file, showing both versions separated by a line of `=` signs, with markers
-indicating where each version begins and ends.
+```
+git pull
+```
 
-From there, it's up to you to decide how to reconcile the conflict: keep
-your version, keep your collaborator's, write something new that combines
-both, or remove the change entirely. Once you've edited the file to remove
-the conflict markers and saved it, continue as normal: stage it, commit it,
-and push. The next time your collaborators pull, they'll receive the
-resolved version.
+If the incoming changes don't overlap with your own, Git merges them
+automatically and you're done — you can push right away. But if you and a
+collaborator both edited the *same lines* of the *same file*, Git can't
+decide which version to keep, and `git pull` will report a conflict. Run
 
-It's worth noting that a merge conflict doesn't require the two edits to
-actually contradict each other — any time two people edit the *same line*
-of the *same file* around the same time, Git flags it as a conflict to be
-safe, even if the changes could technically coexist. Resolving it just
-means confirming, by hand, whether both edits should be kept.
+```
+git status
+```
+
+to see which file(s) are listed as "both modified" — these are the ones
+you'll need to fix by hand.
+
+Open each conflicted file in a text editor. Git has inserted conflict
+markers directly into the file, looking something like this:
+
+```
+<<<<<<< HEAD
+This is your version of the sentence.
+=======
+This is your collaborator's version of the sentence.
+>>>>>>> a1b2c3d (their commit message)
+```
+
+- Everything between `<<<<<<< HEAD` and `=======` is **your** version.
+- Everything between `=======` and `>>>>>>> <hash>` is **their** version.
+
+You need to manually edit this section to reflect what the file should
+actually say: keep your version, keep theirs, write something new that
+combines both, or delete the whole thing if neither should stay. Critically,
+**you must also delete the conflict markers themselves**
+(`<<<<<<<`, `=======`, `>>>>>>>`) — Git leaves this entirely to you, and
+if you forget, those marker lines will remain in your file as literal text.
+
+Once every conflicted file has been edited and the markers removed, stage
+and commit as usual:
+
+```
+git add .
+git commit -m "Resolve merge conflict in team-notes.md"
+git push
+```
+
+Git recognizes that a conflict has been resolved once the file is staged,
+so this commit doesn't need any special syntax — it's a normal commit that
+also happens to close out the merge.
+
+If you'd rather back out of a conflict entirely and start over — for
+example, if you pulled and immediately regretted it — you can abort the
+merge before resolving anything:
+
+```
+git merge --abort
+```
+
+This returns your local repository to exactly how it looked before you ran
+`git pull`, as if the conflict never happened.
 
 ## Avoiding conflicts
 
@@ -381,66 +507,150 @@ role of "repository owner" and "collaborator" so everyone experiences both
 sides of a collaborative workflow — including resolving a merge conflict on
 purpose.
 
+## In-Class Activity: Practicing GitHub Collaboration
+
+For this activity, pair up with a classmate. You'll take turns playing the
+role of "repository owner" and "collaborator" so everyone experiences both
+sides of a collaborative workflow — including resolving a merge conflict on
+purpose.
+
 ### Part 1: Set up a shared repository
 
-1. One partner (the **owner**) creates a new, empty repository on GitHub
-   (don't add a README, `.gitignore`, or license).
-2. The owner goes to the repository's **Settings > Collaborators** and adds
-   the other partner as a collaborator. The collaborator will need to
-   accept the invitation (usually sent by email or visible under their
-   GitHub notifications).
-3. The **collaborator** clones the repository to their own computer:
+1. The **owner** creates a local repository on their own computer. Make a
+   new folder, navigate into it in the terminal, and run:
+
+   ```
+   git init
+   ```
+
+2. Inside that folder, create a file called `team-notes.md` containing one
+   sentence of any text.
+
+3. Stage and commit the file:
+
+   ```
+   git add .
+   git commit -m "Add team notes file"
+   ```
+
+4. On GitHub, create a new, empty repository (don't add a README,
+   `.gitignore`, or license). Copy its URL, then connect your local
+   repository to it and push:
+
+   ```
+   git remote add origin https://github.com/owner-username/repo-name.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+   You'll be prompted to authenticate — use your Personal Access Token,
+   not your account password (see the Token Authentication section above
+   if you need to generate one).
+
+5. Go to the repository's **Settings > Collaborators** page and add your
+   partner as a collaborator, using their GitHub username or email. They'll
+   receive an invitation (by email or under their GitHub notifications) and
+   need to accept it before continuing.
+
+6. The **collaborator**, once access is accepted, clones the repository to
+   their own computer:
 
    ```
    git clone https://github.com/owner-username/repo-name.git
    ```
 
-4. The **owner** creates a local repository on their own computer (using
-   `git init` in a new folder, or reusing an existing local repo they'd
-   like to connect), adds a file called `team-notes.md` with a sentence of
-   any text, then adds the remote, stages, commits, and pushes:
-
-   ```
-   git remote add origin https://github.com/owner-username/repo-name.git
-   git branch -M main
-   git add .
-   git commit -m "Add team notes file"
-   git push -u origin main
-   ```
+   Navigate into the newly created folder and confirm `team-notes.md`
+   appears there.
 
 ### Part 2: Synchronize changes
 
-5. The **collaborator** pulls the owner's changes:
+7. The **collaborator** opens `team-notes.md` and adds a new sentence at
+   the end of the file. Save it, then stage, commit, and push:
+
+   ```
+   git add .
+   git commit -m "Add a second sentence"
+   git push
+   ```
+
+8. The **owner** pulls to receive the collaborator's edit:
 
    ```
    git pull
    ```
 
-   Confirm `team-notes.md` now appears in their local copy.
-
-6. The **collaborator** adds a new sentence to `team-notes.md`, then stages,
-   commits, and pushes their edit.
-
-7. The **owner** pulls to receive the collaborator's edit and confirms it
-   appears in their local copy.
+   Open `team-notes.md` and confirm the new sentence appears.
 
 ### Part 3: Create and resolve a merge conflict (on purpose)
 
-8. **Without pulling first**, both partners simultaneously edit the *same
-   line* of `team-notes.md` on their own computers (agree ahead of time on
-   which line).
+9. **Without pulling first**, both partners open `team-notes.md` on their
+   own computers and edit the *same line* (agree ahead of time on which
+   one), each writing something different. Save the file on both ends.
 
-9. Whoever pushes **first** should succeed normally. Whoever pushes
-   **second** will get a rejected push error, similar to what's shown
-   earlier in this chapter.
+10. Both partners stage and commit their edit:
 
-10. The second person pulls, and should see conflict markers appear
-    directly inside `team-notes.md`. Work together to resolve the conflict
-    by editing the file to keep, combine, or discard the two versions, then
-    stage, commit, and push the resolved file.
+    ```
+    git add .
+    git commit -m "Edit shared line"
+    ```
 
-11. The first partner pulls one more time to confirm they now see the
-    merged, conflict-free version.
+11. Whoever pushes **first** should succeed normally:
+
+    ```
+    git push
+    ```
+
+12. The second person's push will be rejected, since the remote now has
+    changes they don't have locally:
+
+    ```
+    git push
+    ```
+
+    You should see an error similar to:
+
+    ```
+    ! [rejected]        main -> main (fetch first)
+    error: failed to push some refs to 'https://github.com/username/repo.git'
+    ```
+
+13. The second person pulls to bring in the conflicting changes:
+
+    ```
+    git pull
+    ```
+
+    Open `team-notes.md`. You should see conflict markers inserted directly
+    into the file, looking something like:
+
+    ```
+    <<<<<<< HEAD
+    Your version of the line.
+    =======
+    Your collaborator's version of the line.
+    >>>>>>> a1b2c3d (their commit message)
+    ```
+
+14. Edit the file by hand to resolve the conflict — decide together whether
+    to keep one version, combine both, or write something new. Delete the
+    conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) entirely; Git will
+    not remove these for you.
+
+15. Once the file looks the way you want it, with no markers remaining,
+    stage, commit, and push the resolved version:
+
+    ```
+    git add .
+    git commit -m "Resolve merge conflict in team-notes.md"
+    git push
+    ```
+
+16. The first partner pulls one more time to confirm they now see the
+    merged, conflict-free version:
+
+    ```
+    git pull
+    ```
 
 ### What to submit
 
@@ -448,6 +658,3 @@ As a pair, submit a short paragraph (3–5 sentences) describing what the
 conflict markers looked like inside the file, and how you decided to
 resolve the conflict.
 
-## References
-
-- GitHub Community Forum: <https://github.community/>
