@@ -1,0 +1,221 @@
+# Assignments
+
+This chapter collects each week's assignment in one place for easy
+reference. New assignments will be added here as the semester progresses.
+
+## Week 1: Software Setup and Final Project Topic Selection
+
+Before our first class session, please install R and RStudio and verify
+your installation.
+
+## Software Requirements and Installation Instructions {-}
+
+Before our first class session, please install the following software.
+Come to class with everything installed and verified — we'll do a quick
+check together, but coming prepared means we can dive into the material
+right away.
+
+### R {-}
+
+R is a free software environment for statistical computing and graphics.
+Installing or updating R is a separate process from installing or updating
+RStudio (below) — you need both.
+
+- **Windows:** Download the latest version at <https://cran.r-project.org/bin/windows/base/>
+- **Mac OS:** Download the latest version at <https://cran.r-project.org/bin/macosx/>
+- **Linux:** Follow the instructions for your distribution at <https://cloud.r-project.org/bin/linux/>
+
+### RStudio {-}
+
+RStudio is a free Integrated Development Environment (IDE) for R. Installing
+or updating RStudio is separate from installing or updating R.
+
+Download it from <https://posit.co/download/rstudio-desktop/>.
+
+## The RStudio Interface {-}
+
+When you open RStudio, you'll see the window divided into four panes. Each
+one serves a different purpose:
+
+**Source (top left)**
+This is where you write and edit scripts, RMarkdown documents, and other
+files. Code you write here isn't run automatically — you need to send it to
+the Console (below) to execute it. Keeping your code in the Source pane,
+rather than typing directly into the Console, is what makes your work
+reproducible: it's saved, shareable, and can be re-run from start to finish.
+
+**Console (bottom left)**
+This is where R actually executes code and shows you the results. You can
+type commands directly into the Console, but anything you type there isn't
+saved anywhere — so it's best used for quick, one-off checks rather than your
+actual analysis.
+
+**Environment / History (top right)**
+The Environment tab shows you all the objects (data frames, variables,
+functions, etc.) currently loaded in your R session, along with their type
+and a preview of their contents. The History tab keeps a running log of every
+command you've executed in the Console during your session.
+
+**Files / Plots / Packages / Help (bottom right)**
+This pane is multi-purpose. *Files* lets you browse your project's folder
+structure. *Plots* displays any graphs or visualizations you create. *Packages*
+shows which R packages are installed and lets you load or update them. *Help*
+displays documentation when you look up a function.
+
+You can resize any pane by dragging its borders, and rearrange their
+positions under **Tools > Global Options > Pane Layout** if you'd prefer a
+different arrangement.
+
+### Required R Packages {-}
+
+We'll be using the following R packages throughout the course: `tidyverse`,
+`rmarkdown`, `bookdown`, and `renv`. Install them, along with their dependencies, by running the
+following in the R console:
+
+```r
+install.packages(c("tidyverse",
+                    "rmarkdown",
+                    "bookdown",
+                    "renv"), dependencies = TRUE)
+```
+
+### Verifying Your Installation {-}
+
+To confirm everything is working, open RStudio and run the following in
+the console:
+
+```r
+R.version.string
+library(tidyverse)
+library(bookdown)
+library(renv)
+```
+
+If R prints a version number and the `tidyverse` loads without error
+messages, you're all set.
+
+### Dataset eligibility criteria
+
+Your dataset must meet the following criteria:
+
+- **Public availability:** The dataset must be publicly accessible — for
+  example, from a government agency, public data repository, or a published
+  study's supplementary materials. No proprietary, restricted-access, or
+  personally identifiable data.
+- **Minimum size:** At least **100 rows (observations)** and **10 variables
+  (columns)**.
+- **Rationale:** A short written explanation (3–5 sentences) of why this
+  dataset interests you and what you hope to learn from it.
+- **Exploratory questions:** At least 2–3 questions you want to answer using
+  this dataset by the end of the course.
+
+
+### What to submit
+
+Go to Canvas, and submit a screen shot of your R console output for the 
+"Week 1" assignment that shows your successful download.
+
+Then in the text box, submit the following:
+
+- A brief description of your dataset, including an overview of how the data were collected, how many observations there are, and how many variables were measured.
+- A short written explanation (3–5 sentences) of why this dataset interests you and what you hope to learn from it.
+- At least 2–3 questions you want to answer using this dataset by the end of the course.
+- A brief description on any data cleaning you anticipate needing to do, based on an initial look at the file.
+
+## Week 2: Project Directory Structure and Git Setup
+
+Now that you've chosen your final project dataset, it's time to set up the
+project itself as a properly structured, version-controlled repository.
+
+### What to do
+
+**1. Design your directory structure.**
+
+Based on what we covered in Chapter 1, plan out a folder structure for your
+final project. At minimum, your structure should separate raw data,
+scripts, and output — but feel free to adapt it to fit your specific
+project.
+
+**2. Create the folders locally.**
+
+Make a new folder for your project (name it something descriptive, e.g.
+`final-project`), then create your subfolders inside it. You can do this in
+Finder/File Explorer, or from the terminal. For example, from inside your
+project folder:
+
+```
+mkdir data
+mkdir data/raw
+mkdir data/processed
+mkdir scripts
+mkdir output
+mkdir output/figures
+```
+
+(Adjust folder names to match your own planned structure — this is just an
+example.)
+
+**3. Turn it into a Git repository.**
+
+Navigate into your project folder in the terminal (recall the drag-and-drop
+or Option+right-click tricks from Chapter 2 if you need to find the path),
+then run:
+
+```
+git init
+```
+
+**4. Add a `.gitignore` file.**
+
+Create a new plain-text file named exactly `.gitignore` in your project's
+top-level folder (see Chapter 2 for instructions specific to your
+operating system). At minimum, include the following:
+
+```
+.Rhistory
+.Rproj.user/
+.DS_Store
+```
+
+Add any additional rules relevant to your own project — for example, if
+you'll be working with large raw data files you don't want tracked.
+
+**5. Add a README.**
+
+Create a new plain-text file named `README.md` in your project's top-level
+folder. At minimum, it should include:
+
+- Your project title and a one-paragraph description of what it's about
+- A brief explanation of your folder structure (what lives where)
+- A note on your data source (a link or citation)
+
+**6. Create a GitHub repository and connect it.**
+
+On GitHub, create a new, empty repository (don't add a README,
+`.gitignore`, or license through GitHub's interface — you've already made
+your own). Copy its URL, then run the following from inside your project
+folder, replacing the URL with your own:
+
+```
+git add .
+git commit -m "Initial project structure"
+git remote add origin https://github.com/your-username/your-repo-name.git
+git branch -M main
+git push -u origin main
+```
+
+You'll be prompted to authenticate with your Personal Access Token (see
+Chapter 3 if you need a refresher on generating one).
+
+**7. Confirm it worked.**
+
+Refresh your repository's page on GitHub and confirm your folder structure,
+`.gitignore`, and `README.md` all appear.
+
+### What to submit
+
+Submit a short document (PDF or Word) containing:
+
+1. A screenshot showing your folder structure.
+2. A brief paragraph (3–5 sentences) explaining your folder structure —
+   what each top-level folder is for and why you organized it this way.

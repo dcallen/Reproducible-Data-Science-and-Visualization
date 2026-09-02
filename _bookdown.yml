@@ -8,6 +8,7 @@ rmd_files: [
   "index.Rmd",
   "01-project-organization.Rmd",
   "02-version-control-git.Rmd",
-  "03-github.Rmd"
+  "03-github.Rmd",
+  "Assignments.Rmd"
 ]
 new_session: yes
