@@ -193,17 +193,3 @@ Your dataset should have at least **100 rows (observations)** and at least **10 
   (variables)**. This ensures there's enough structure and complexity to
   meaningfully practice data wrangling and visualization.
 
-
-### What to submit
-
-Go to Canvas, and complete the "Week 1" assignment:
-
-1. A brief description of your dataset, including an overview of how the data 
-  were collected, how many observations there are, and how many variables were
-  measured.
-2. A short written explanation (3–5 sentences) of why this
-  dataset interests you and what you hope to learn from it.
-3. At least 2–3 questions you want to answer using
-  this dataset by the end of the course.
-4. A brief description on any data cleaning you anticipate needing to do, based 
-  on an initial look at the file.

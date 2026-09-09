@@ -1,3 +1,24 @@
+
+
+# Collaborative Science with GitHub
+
+In the last chapter, we covered how Git works locally on your own computer.
+Now we'll connect that local repository to GitHub, which lets you back up
+your work remotely and collaborate with others.
+
+A **remote repository** is a copy of your repository stored somewhere other
+than your own computer — in our case, on GitHub's servers. Most commonly,
+you'll have a **local repository** on your machine and a **remote
+repository** on GitHub that mirrors it. Keeping the two synchronized is what
+lets you collaborate: your changes get pushed up to GitHub, and your
+collaborators' changes get pulled down to your machine.
+
+There are two ways to set up a local-remote pair. One is to start with a
+local repository and connect it to a new, empty remote. Or you
+can start with a repository that already exists on GitHub and download
+("clone") a copy of it to your computer — useful when joining a project
+that someone else already started. We'll cover both ways below.
+
 ## The 3-2-1 rule
 
 Before diving into GitHub specifically, it's worth understanding the
@@ -35,25 +56,6 @@ depends on your specific project — a project built entirely around code,
 scripts, and small text-based datasets might be fully covered by GitHub
 alone, while a project involving large raw datasets, imagery, or other
 binary files will need additional backup solutions alongside it.
-
-# Collaborative Science with GitHub
-
-In the last chapter, we covered how Git works locally on your own computer.
-Now we'll connect that local repository to GitHub, which lets you back up
-your work remotely and collaborate with others.
-
-A **remote repository** is a copy of your repository stored somewhere other
-than your own computer — in our case, on GitHub's servers. Most commonly,
-you'll have a **local repository** on your machine and a **remote
-repository** on GitHub that mirrors it. Keeping the two synchronized is what
-lets you collaborate: your changes get pushed up to GitHub, and your
-collaborators' changes get pulled down to your machine.
-
-There are two ways to set up a local-remote pair. One is to start with a
-local repository and connect it to a new, empty remote. Or you
-can start with a repository that already exists on GitHub and download
-("clone") a copy of it to your computer — useful when joining a project
-that someone else already started. We'll cover both ways below.
 
 ## Adding a remote to a local repository
 
@@ -104,6 +106,17 @@ default name, `master`):
 ```
 git branch -M main
 ```
+
+**Try it now:** Connect your Chapter 2 practice repo to GitHub.
+
+1. In your terminal, `cd` into `test-repo` from Chapter 2, then confirm
+   with `pwd`.
+2. On GitHub, create a new empty repository (no README, `.gitignore`, or
+   license).
+3. Copy its URL, then run `git remote add origin <url>`, substituting
+   the URL you copied.
+4. Run `git remote -v` to confirm the remote was added.
+5. Run `git branch -M main` to make sure your branch is named `main`.
 
 ## Pushing to a remote repository
 
@@ -205,6 +218,18 @@ repeat this process more often; a longer expiration is more convenient but
 riskier if the token is ever leaked. For this course, 90 days is a
 reasonable default.
 
+**Try it now:** Generate a token and push `test-repo` to GitHub.
+
+1. Follow the steps above to generate a Personal Access Token with the
+   **repo** scope checked.
+2. In your terminal, from inside `test-repo`, run `git push -u origin
+   main`.
+3. When prompted, enter your GitHub username, then paste your token as
+   the password (nothing will appear on screen as you paste — that's
+   normal).
+4. Refresh the repository's page on GitHub and confirm your files
+   (`notes.txt`, `.gitignore`, etc.) now appear there.
+
 ## Cloning a repository
 
 The other way to set up a local-remote pair is to create the repository on
@@ -225,6 +250,17 @@ git clone https://github.com/their-username/their-repo.git
 
 Git will create a new folder (named after the repository) containing a full
 copy of the project, already connected to the remote as `origin`.
+
+**Try it now:** Clone the repository you just pushed.
+
+1. Navigate to a different folder on your computer (anywhere other than
+   `test-repo`) — this is where the clone will live.
+2. Run `git clone` followed by the URL of your `test-repo` repository on
+   GitHub.
+3. `cd` into the newly created folder, then run `ls`/`dir` to confirm the
+   files are there.
+4. Run `git remote -v` and notice `origin` is already configured —
+   cloning sets this up automatically, unlike `git init`.
 
 ## Adding a collaborator
 
@@ -277,6 +313,16 @@ are already in sync, running `git pull` simply does nothing.
 If a collaborator has changed the same part of a file you've also changed,
 pulling will trigger a **merge conflict**, which Git can't resolve
 automatically.
+
+**Try it now:** Pull a change made directly on GitHub.
+
+1. On GitHub, open `notes.txt` in your `test-repo` repository (on the
+   website, not your computer) and click the pencil icon to edit it.
+2. Add a new sentence and commit the change directly on GitHub.
+3. Back in your terminal, navigate into your local `test-repo` folder and
+   run `git pull`.
+4. Open `notes.txt` locally and confirm the sentence you added on GitHub
+   is now there.
 
 ## Resolving conflicts
 
@@ -441,6 +487,17 @@ If the two branches have conflicting changes, merging will trigger the same
 kind of merge conflict discussed earlier, which you'll resolve the same
 way.
 
+**Try it now:** Create, edit, and merge a branch.
+
+1. In `test-repo`, run `git checkout -b my-branch`.
+2. Open `notes.txt`, add a new sentence, save it, then run `git add .`
+   and `git commit -m "Edit on my-branch"`.
+3. Run `git checkout main` to switch back, then open `notes.txt` — notice
+   your edit isn't there, since it only exists on `my-branch`.
+4. Run `git merge my-branch`, then open `notes.txt` again to confirm the
+   edit is now in `main`.
+5. Run `git branch -d my-branch` to delete the now-merged branch.
+
 ## Forking a repository
 
 **Forking** creates your own copy of someone else's repository on your
@@ -477,6 +534,18 @@ able to push directly to their repository unless they've added you as a
 collaborator — pull requests (next section) are how you propose changes
 back to them instead.
 
+**Try it now:** Fork and clone a repository.
+
+1. Find any public repository on GitHub (for example, your course
+   textbook's repository).
+2. Click **Fork** in the top-right corner to create your own copy under
+   your account.
+3. Copy your fork's URL and run `git clone` with it to download a local
+   copy.
+4. Run `git remote add upstream` followed by the *original* repository's
+   URL, then `git remote -v` to confirm you now have both `origin` (your
+   fork) and `upstream` (the original) configured.
+
 ## Pull requests
 
 A **pull request** is how you propose merging your changes — whether from a
@@ -500,12 +569,16 @@ review the specific changes, and see the full list of commits it includes.
 Once everyone involved is satisfied with the proposed changes and there are
 no conflicts, the pull request can be merged with a single click.
 
-## In-Class Activity: Practicing GitHub Collaboration
+**Try it now:** Open a pull request within your own repository.
 
-For this activity, pair up with a classmate. You'll take turns playing the
-role of "repository owner" and "collaborator" so everyone experiences both
-sides of a collaborative workflow — including resolving a merge conflict on
-purpose.
+1. In `test-repo`, create a new branch: `git checkout -b add-a-line`.
+2. Add a sentence to `notes.txt`, then run `git add .`, `git commit -m
+   "Add a line via PR"`, and `git push -u origin add-a-line`.
+3. On GitHub, go to your repository, click **Pull requests**, then **New
+   pull request**, and choose `add-a-line` as the branch to merge into
+   `main`.
+4. Add a title and description, submit the pull request, then click
+   **Merge pull request** to complete it.
 
 ## In-Class Activity: Practicing GitHub Collaboration
 

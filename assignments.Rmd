@@ -189,28 +189,14 @@ folder. At minimum, it should include:
 - A brief explanation of your folder structure (what lives where)
 - A note on your data source (a link or citation)
 
-**6. Create a GitHub repository and connect it.**
+**6. Make your first commit.**
 
-On GitHub, create a new, empty repository (don't add a README,
-`.gitignore`, or license through GitHub's interface — you've already made
-your own). Copy its URL, then run the following from inside your project
-folder, replacing the URL with your own:
+From inside your project folder, run:
 
 ```
 git add .
 git commit -m "Initial project structure"
-git remote add origin https://github.com/your-username/your-repo-name.git
-git branch -M main
-git push -u origin main
 ```
-
-You'll be prompted to authenticate with your Personal Access Token (see
-Chapter 3 if you need a refresher on generating one).
-
-**7. Confirm it worked.**
-
-Refresh your repository's page on GitHub and confirm your folder structure,
-`.gitignore`, and `README.md` all appear.
 
 ### What to submit
 
@@ -219,3 +205,56 @@ Submit a short document (PDF or Word) containing:
 1. A screenshot showing your folder structure.
 2. A brief paragraph (3–5 sentences) explaining your folder structure —
    what each top-level folder is for and why you organized it this way.
+
+## Week 3: Creating a GitHub Repository for Your Project
+
+In Week 2, you created a local Git repository for your final project. This
+week, you'll put that repository on GitHub so it's backed up remotely and
+ready for collaboration.
+
+### What to do
+
+**1. Create a new repository on GitHub.**
+
+- Go to <https://github.com> and log in.
+- Click the **+** icon in the top-right corner and select **New repository**.
+- Fill out the repository details:
+  - **Repository name:** Use a short, descriptive name for your project
+    (e.g., `my-lastname-final-project`)
+  - **Description:** One sentence describing your project topic
+  - **Visibility:** Choose **Public** (unless your data requires restricted
+    access, in which case choose **Private**)
+  - **Do NOT** check "Add a README file," "Add .gitignore," or "Choose a
+    license" — your local repo already has these files, and we'll connect
+    it directly
+- Click **Create repository**. GitHub will show you a page with setup
+  instructions — keep this page open.
+
+**2. Connect your local repo to GitHub.**
+
+Copy the repository URL from the GitHub page (it will look like
+`https://github.com/yourusername/your-repo-name.git`). Then, from inside
+your project folder, run the following, replacing `<repo-url>` with the URL
+you copied:
+
+```
+git remote add origin <repo-url>
+git branch -M main
+git push -u origin main
+```
+
+If prompted for a username and password, enter your GitHub username. For
+the password, use a Personal Access Token (PAT) instead of your account
+password (see Chapter 3 for a refresher on generating one).
+
+**3. Verify it worked.**
+
+Refresh your repository's page on GitHub and confirm that your project
+files — including your `.gitignore` and `README.md` — appear there.
+
+### What to submit
+
+Submit the following:
+
+1. A screenshot of your repository's GitHub page showing your files.
+2. The URL to your GitHub repository.

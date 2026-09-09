@@ -110,6 +110,60 @@ copy and paste:
   Command Prompt, type `cd ` (with a trailing space), right-click to paste
   the path, and press Enter.
 
+**Try it now:** Open your terminal and get comfortable moving around.
+
+1. Run `cd` to move into a folder you use often (like Documents or Desktop).
+2. Run `cd ..` to move back up one level, then confirm you're where you
+   expect.
+3. Try chaining two moves at once with `cd ../..`.
+
+### Showing your working directory
+
+If you ever lose track of where you are, you can print the full path of
+your current working directory:
+
+- **On Mac:** type `pwd` and press Enter. This stands for "print working
+  directory."
+- **On Windows:** type `cd` by itself (with nothing after it) and press
+  Enter. This prints the current directory instead of changing it.
+
+### Listing the contents of a folder
+
+Once you're in a directory, you'll often want to see what's inside it
+before you navigate further or open a file.
+
+- **On Mac:** type `ls` and press Enter to list the files and folders in
+  your current directory.
+  - `ls -a` also shows hidden files (those starting with a `.`, like
+    `.gitignore`).
+  - `ls -l` shows a detailed ("long") listing, including file sizes and
+    modification dates.
+- **On Windows:** type `dir` and press Enter to list the files and folders
+  in your current directory.
+  - `dir /a` also shows hidden files.
+
+### Opening a file from the command line
+
+You can open files directly from the terminal instead of navigating to
+them in Finder or File Explorer.
+
+- **On Mac:** type `open` followed by the file name, for example:
+  `open README.md`. This opens the file in its default application.
+  - To open the current folder in Finder instead of a specific file, type
+    `open .`
+- **On Windows:** type `start` followed by the file name, for example:
+  `start README.md`. This opens the file in its default application.
+  - To open the current folder in File Explorer, type `start .`
+
+**Try it now:** Put `pwd`/`cd`, `ls`/`dir`, and `open`/`start` together.
+
+1. Run `pwd` (Mac) or `cd` (Windows) to confirm where you are.
+2. Run `ls` (Mac) or `dir` (Windows) to see what's in that folder.
+3. Pick any file you see listed and open it with `open filename` (Mac) or
+   `start filename` (Windows).
+4. Close the file, then open the folder itself with `open .` (Mac) or
+   `start .` (Windows).
+
 ## Configuring Git
 
 Before using Git for the first time, you need to tell it who you are. This
@@ -130,6 +184,14 @@ To check your current configuration at any time:
 ```
 git config --list
 ```
+
+**Try it now:** Set your own Git identity and confirm it stuck.
+
+1. Run `git config --global user.name "First Last"` with your own name.
+2. Run `git config --global user.email "you@example.com"` with the email
+   tied to your GitHub account.
+3. Run `git config --list` and find your `user.name` and `user.email` in
+   the output to confirm both were saved correctly.
 
 ## Getting help
 
@@ -175,6 +237,15 @@ default in your file browser. To view them:
   box for **"Hidden items"** (older versions of Windows: View tab →
   Options → View → select "Show hidden files, folders, and drives").
 
+**Try it now:** Turn a folder into a Git repository.
+
+1. Create a new folder anywhere on your computer and name it
+   `test-repo`.
+2. Navigate into it in your terminal with `cd`.
+3. Run `git init`.
+4. Toggle hidden files on (Cmd+Shift+. on Mac, or the "Hidden items" box
+   on Windows) and confirm you can see the new `.git` subfolder.
+
 ## Tracking files
 
 Initializing a repository doesn't automatically start tracking the files
@@ -204,6 +275,15 @@ files (images, Word documents, Excel files) the same way, and large or
 frequently-regenerated files can bloat your repository unnecessarily.
 That's what `.gitignore` is for, covered next.
 
+**Try it now:** Practice checking status and staging a file.
+
+1. In the `test-repo` folder from the last checkpoint, create a plain-text
+   file called `notes.txt` with a sentence of any text in it.
+2. Run `git status` — notice `notes.txt` is listed as untracked.
+3. Run `git add notes.txt`.
+4. Run `git status` again and notice the file is now listed differently
+   (staged, ready to be committed).
+
 ## Ignoring files
 
 A `.gitignore` file tells Git which files or file types to never track,
@@ -230,15 +310,6 @@ A couple of things to watch for:
   `.gitignore.txt`. Since it starts with a period, `.gitignore` is also a
   hidden file in Finder; you may need to enable "show hidden files"
   (Cmd+Shift+.) to see it after creating it.
-
-A couple of things to watch for:
-
-- Make sure your text editor doesn't add a hidden `.txt` extension behind
-  the scenes — the file needs to be named `.gitignore`, not
-  `.gitignore.txt`.
-- Since it starts with a period, `.gitignore` is a hidden file. You may need
-  to enable "show hidden files" in Finder (Cmd+Shift+.) to see it after
-  creating it.
 
 Some common candidates for `.gitignore` rules:
 
@@ -267,6 +338,17 @@ manuscript_files/
 
 The `*` wildcard means "any characters," so `*.jpg` excludes every `.jpg`
 file at once. A trailing slash, like `figures/`, excludes an entire folder.
+
+**Try it now:** Create a `.gitignore` and confirm it works.
+
+1. In `test-repo`, create a `.gitignore` file (using RStudio's **File >
+   New File > Text File**, saving it as `.gitignore`, is the easiest way
+   to avoid extension issues).
+2. Add one line to it: `*.log`
+3. Create a dummy file called `test.log` in the same folder (any content,
+   or even empty, is fine).
+4. Run `git status` — `test.log` should not appear as untracked, even
+   though you never staged or ignored it individually.
 
 Most of the rules above target file *types* by extension — but the last two,
 `.Rhistory` and `.Rproj.user/`, are specific files and folders that RStudio
@@ -317,6 +399,16 @@ Every commit needs a message (the `-m` flag), and it's worth taking that
 seriously — a clear, specific message ("Fix heading levels in index.Rmd")
 is far more useful to future-you than a vague one ("updates").
 
+**Try it now:** Walk `notes.txt` through all three states.
+
+1. Run `git commit -m "Add notes file"` to commit the version of
+   `notes.txt` you staged earlier.
+2. Open `notes.txt` and add a new sentence, then save it.
+3. Run `git status` — notice Git now describes it as modified, not
+   untracked.
+4. Run `git add notes.txt` to stage the edit, then `git commit -m "Update
+   notes"` to commit it.
+
 ## Un-staging files
 
 Sometimes you'll stage a file you didn't mean to — maybe you forgot to add
@@ -333,6 +425,14 @@ backslash in front of it:
 ```
 git rm --cached \*.jpg
 ```
+
+**Try it now:** Practice un-staging a file.
+
+1. Create a new file called `scratch.txt` in `test-repo` with any content.
+2. Run `git add scratch.txt` to stage it.
+3. Run `git status` and confirm it's listed as staged.
+4. Run `git rm --cached scratch.txt`, then `git status` again — it should
+   now show as untracked instead of staged.
 
 ## Recovering a previous version of a file
 
@@ -367,6 +467,16 @@ with a branch name, which `checkout` is also used for); and `filename.ext`
 is the specific file you want restored. After running this, that file will
 revert to exactly how it looked at that commit — but note that this change
 itself isn't saved to history until you stage and commit it again.
+
+**Try it now:** Recover an earlier version of `notes.txt`.
+
+1. Run `git log` and find the hash for your very first commit (the one
+   from the "Add notes file" message).
+2. Copy the first 7–8 characters of that hash.
+3. Run `git checkout <hash> -- notes.txt`, substituting your copied hash.
+4. Open `notes.txt` and confirm the sentence you added in the last
+   checkpoint is gone — you're back to the original version.
+
 ## Removing Git
 
 If you ever want to stop version-controlling a folder entirely — turning it
