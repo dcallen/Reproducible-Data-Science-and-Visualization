@@ -1,0 +1,571 @@
+# Tidy Data and Best Practices in the Use of Spreadsheets
+
+Almost everyone has used a spreadsheet before, and almost everyone has
+picked up a few habits along the way that quietly work against them once
+that spreadsheet needs to feed into an analysis. This chapter isn't about
+learning spreadsheet software — it's about learning to *see* your data the
+way a computer does, so that the files you build by hand today don't
+become a headache when you (or someone else) tries to read them into R six
+months from now.
+
+## What spreadsheets are for (and what they aren't)
+
+Spreadsheets are excellent for one thing in particular: entering data.
+They're less well suited to *analyzing* it. It's tempting to sort, filter,
+calculate, and summarize directly inside Excel or Google Sheets, since the
+tools are right there — but every one of those actions is a manual,
+point-and-click step, which means it isn't recorded anywhere and can't be
+automatically repeated. If you need to redo the analysis, add new data, or
+just remember what you did months later while writing up your methods,
+a spreadsheet-based workflow leaves you with no trail to follow. For this
+course (and generally, in reproducible research), spreadsheets are a tool
+for data entry only — everything downstream of that happens in code.
+
+## Human-readable vs. computer-readable data
+
+Almost every bad spreadsheet habit traces back to the same root cause:
+formatting data so that a person can make sense of it, without stopping to
+ask whether a computer could too. People are good at picking up meaning
+from context — indentation, blank rows, color, a note in the margin. Code
+isn't. A script reading in your spreadsheet only sees rows and columns; it
+has no way to infer what a blank space or a highlighted cell is supposed
+to mean. Getting into the habit of asking "would this still make sense if
+all the formatting were stripped away, leaving just the values in a grid?"
+is the single most useful check you can run on your own data before
+calling it done.
+
+## What makes data "tidy"
+
+The rule at the center of all of this is simple to state: **each column
+holds one variable, and each row holds one observation.** A variable is
+whatever you're measuring — height, treatment, site, date. An observation
+is one instance of measuring all of those things together, for one
+subject, at one point in time. When your table is built this way, there's
+no ambiguity about what a given column or row represents, either for you
+or for the software reading it in. It also happens to line up naturally
+with how R (and most statistical languages) actually stores data — as a
+set of columns, where every value in a given column has to be the same
+type. Once your spreadsheet already matches that structure, importing and
+working with it in R takes far less cleanup.
+
+**Try it now:** Look at the most recent spreadsheet you opened in Microsoft 
+Excel. For each column, ask yourself: does this column represent
+exactly one variable? And for each row: does it represent exactly one
+observation? Note down anything that doesn't clearly pass that test — you
+don't need to fix it yet, just notice it.
+
+## Common ways spreadsheets go wrong
+
+The tidy data rule is easy to state but easy to violate without realizing
+it. Below, we'll walk through the most common patterns to watch for. As
+we go, you'll fix a single messy example spreadsheet one problem at a
+time, ending with a fully tidy version by the end of the chapter.
+
+Here's the example you'll be working with — a field data sheet recording
+frog measurements:
+
+| Site A - collected by M. Brown |         |          |
+|---------------------------------|---------|----------|
+| Frog ID | Class          | Weight  |
+| 1       | adult female   | 12.5g   |
+| 2       | juvenile male  |         |
+| 3       | Adult Female   | 0       |
+
+[Download the starter spreadsheet](data/frog-data-try-it-now.xlsx) and
+open it in Excel or Google Sheets before continuing — you'll build on it
+at each checkpoint below.
+
+### Missing data: zero, blank, or something else?
+
+Before we get into specific bad habits, it's worth pausing on one
+distinction that trips people up constantly: **a zero and a missing value
+are not the same thing.** A zero means you measured something and the
+answer was zero — a trap that caught no animals, a plot with no invasive
+species present. A missing value means you don't have a number at all —
+you didn't get to that measurement, the equipment failed, the observation
+wasn't applicable. These are two different facts about your data, and
+they need to be recorded differently.
+
+So how *should* you record "missing"? A few options exist, and they're
+not equally good:
+
+- **Leaving the cell blank** is generally the best choice. Every common
+  analysis tool (including R) recognizes an empty cell as missing data
+  and handles it accordingly, without you needing to do anything special.
+- **Placeholder numbers** like `999` or `-999` are a common instinct, but
+  a computer has no way to know these aren't real measurements — they'll
+  silently get pulled into averages and other calculations unless you
+  remember to filter them out every single time.
+- **Placeholder text** like "Unknown" or "N/A" causes a different problem:
+  dropping even one text value into an otherwise numeric column forces
+  the *entire column* to be read as text, meaning none of the numbers in
+  it can be used in a calculation until that's fixed.
+- **Zero** should never be used to mean "missing," for the reason above —
+  it erases the distinction between "measured and it was zero" and "not
+  measured at all."
+
+The one tradeoff with leaving cells blank: while you're actively entering
+data, it can be hard to tell "blank because missing" apart from "blank
+because I haven't typed it in yet." Being deliberate and finishing each
+row as you go (rather than leaving gaps to fill in "later") helps avoid
+that ambiguity.
+
+With that distinction in mind, the frog table above
+already reflects it: frog 2's weight is left blank because the scale's
+battery died before it could be weighed (truly missing), while frog 3's
+weight starts out incorrectly as `0` even though the frog actually
+escaped before being weighed — a mistake you'll fix once we get there.
+
+### Cramming two variables into one column
+
+If a single column mixes two pieces of information — say, "adult female"
+or "juvenile male" in one "class" column — you've actually got two
+variables (age class and sex) squeezed into one. This feels efficient
+while entering data, but it backfires the moment you need to filter or
+group by just one of those two things: now you have to split the column
+apart before you can use it. It's much easier to build the table correctly
+from the start than to un-mix a column later, so age class and sex should
+each get their own column from the outset.
+
+**Try it now:** Split the "Class" column into two separate columns: "Age
+Class" and "Sex." Your table should now look like this:
+
+| Site A - collected by M. Brown |            |        |         |
+|---------------------------------|------------|--------|---------|
+| Frog ID | Age Class | Sex    | Weight  |
+| 1       | adult     | female | 12.5g   |
+| 2       | juvenile  | male   |         |
+| 3       | Adult     | Female | 0       |
+
+### Putting variables in rows instead of columns
+
+It might seem arbitrary whether variables go in columns and observations
+go in rows, rather than the reverse — but there's a concrete reason for
+the convention. R stores each column as a vector, and a vector can only
+hold one data type at a time (all numbers, or all text, never a mix).
+Picture a dataset of frog weights collected from several ponds: if each
+frog is a row, you naturally get a numeric "weight" column and a
+text "pond" column, which R handles cleanly. Flip that around — with each
+frog as a column — and each column ends up holding both a number and a
+piece of text, which R can't represent as a single vector at all. This
+isn't unique to R; it holds for essentially any tool built around
+column-based data.
+
+### Stacking multiple tables in one sheet
+
+Placing more than one table in the same spreadsheet — separated visually
+by a blank row, a border, or just physical distance — reads fine to a
+person, but a computer parsing that sheet doesn't see separate tables; it
+sees rows and columns, and by default will assume any two values on the
+same row belong to the same observation. That false association is often
+invisible until an analysis produces something obviously wrong, at which
+point you're left tracing the error back to a layout choice. If you have
+more than one table's worth of information, give each one its own sheet
+or its own file. The same idea applies to any note or label sitting
+*outside* the table's row-and-column grid — like the "Site A / collected
+by M. Brown" note above your frog table — since a computer reading in
+just the grid will never see it at all.
+
+**Try it now:** Move the "Site A" and "M. Brown" information out of the
+header note and into two proper columns, "Site" and "Observer," repeated
+on every row. Your table should now look like this:
+
+| Frog ID | Age Class | Sex    | Weight  | Site   | Observer |
+|---------|-----------|--------|---------|--------|----------|
+| 1       | adult     | female | 12.5g   | Site A | M. Brown |
+| 2       | juvenile  | male   |         | Site A | M. Brown |
+| 3       | Adult     | Female | 0       | Site A | M. Brown |
+
+### Splitting data across multiple sheets
+
+This one seems harmless, but it introduces two separate problems. First,
+plenty of tools (including base R) can only read one sheet's worth of
+data at a time, so working across several tabs means constantly exporting
+and re-importing. Second, and more importantly, if you're using separate
+sheets to hold the *same kind* of data — say, one tab per field season or
+one tab per site — you're violating a closely related tidy data
+principle: **each type of observation belongs in one table.** There's no
+need to split identical data across sheets; instead, add a column (like
+"year" or "site," which you just added above) to record which season or
+site each row came from, and keep everything in a single table. That one
+change saves you from ever having to stitch sheets back together before
+you can analyze anything.
+
+### Using color, borders, or merged cells to encode meaning
+
+Any visual formatting — a highlighted cell, a bolded header, a merged
+block spanning several rows — disappears the instant the file is read
+into an analysis tool. All that survives the import is the grid of values.
+If a color is standing in for some piece of information ("cells shaded
+yellow indicate a flagged sample"), that information needs its own column
+instead, spelled out as text or a code. The same goes for merged cells: if
+a value logically applies to several rows, repeat the value in every row
+rather than merging cells to show it once (notice this is exactly what
+you did with "Site" and "Observer" above). Extra columns and repeated
+values cost you nothing; lost information costs you everything.
+
+### Putting units inside cells
+
+Recording measurements as "5.2 kg" or "12 cm" instead of just "5.2" or
+"12" turns a numeric column into a text column the instant your software
+reads it — and a text column can't be used in calculations. If every
+measurement in a column shares the same unit, put the unit in the column
+name instead (`weight_kg`, `distance_cm`). If measurements genuinely come
+in mixed units, add a separate column recording the unit for each row
+(`weight_unit`) — but the numeric value itself should always be just the
+number. This also demonstrates why having appropriate metadata in your repo's
+readme file is important ... it can be difficult and sometimes impossible 
+to have the units stored in the column name, so it is good practice best for 
+your readme file to clearly explain what the units are in the data.
+
+**Try it now:** Fix the "Weight" column so it holds only numbers, with no
+unit typed into the cell. Your table should now look like this:
+
+| Frog ID | Age Class | Sex    | Weight  | Site   | Observer |
+|---------|-----------|--------|---------|--------|----------|
+| 1       | adult     | female | 12.5    | Site A | M. Brown |
+| 2       | juvenile  | male   |         | Site A | M. Brown |
+| 3       | Adult     | Female | 0       | Site A | M. Brown |
+
+### Using problematic column names
+
+Problematic column names are a lot like the problematic file names from
+Chapter 1 — non-descriptive, containing spaces or special characters, or
+just human-readable but not computer-readable. Whether you prefer
+`weightGrams` or `weight_g`, pick one convention and use it consistently.
+Including units directly in the name (`weight_g`, `distance_km`) is a
+small habit that saves a lot of confusion, since it means the value itself
+never needs a unit typed into it.
+
+**Try it now:** Rename all six column headers to computer-friendly,
+`snake_case` names, adding the unit to the weight column's name now that
+you know every value is in grams. Your table should now look like this:
+
+| frog_id | age_class | sex    | weight_g | site   | observer |
+|---------|-----------|--------|----------|--------|----------|
+| 1       | adult     | female | 12.5     | Site A | M. Brown |
+| 2       | juvenile  | male   |          | Site A | M. Brown |
+| 3       | Adult     | Female | 0        | Site A | M. Brown |
+
+### Applying it: zero vs. missing in the frog data
+
+We already covered the distinction between a true zero and a missing
+value earlier in this chapter. Keep it in mind as you work through this
+checkpoint — it applies directly to frog 3's weight measurement.
+
+**Try it now:** Checking the field notebook for this survey, you find a
+note: *"Frog 3 escaped the net before it could be weighed — recorded 0
+by mistake."* Frog 2's blank weight, on the other hand, really is a
+correctly-recorded missing value (the scale's battery died partway
+through the survey). Fix `weight_g` for frog 3 so it no longer conflates
+"escaped, never weighed" with an actual zero-gram measurement:
+
+| frog_id | age_class | sex    | weight_g | site   | observer |
+|---------|-----------|--------|----------|--------|----------|
+| 1       | adult     | female | 12.5     | Site A | M. Brown |
+| 2       | juvenile  | male   |          | Site A | M. Brown |
+| 3       | Adult     | Female |          | Site A | M. Brown |
+
+### Same category, different spellings
+
+Inconsistent spelling or capitalization of the same category value is
+easy to introduce without noticing — entering "F," "Female," and "f"
+interchangeably in a sex column, for instance. Nothing about this breaks
+on entry, but it silently undercounts your categories later: filtering
+for "female" will miss every row entered as "Female." Deciding on one
+spelling per category before you start entering data (and sticking to it)
+avoids having to clean this up by hand afterward.
+
+**Try it now:** Standardize the capitalization in `age_class` and `sex`
+so the same category is always spelled identically — for this table,
+convert everything to lowercase. This is the final fix, so your frog
+table is now fully tidy:
+
+| frog_id | age_class | sex    | weight_g | site   | observer |
+|---------|-----------|--------|----------|--------|----------|
+| 1       | adult     | female | 12.5     | Site A | M. Brown |
+| 2       | juvenile  | male   |          | Site A | M. Brown |
+| 3       | adult     | female |          | Site A | M. Brown |
+
+## Long vs. wide data
+
+So far, every version of the frog table has had one row per frog and one
+column per variable — but there's another common way to lay out the same
+kind of data, and it's worth knowing the difference before you run into
+it.
+
+Imagine you weighed the same three frogs on three separate site visits.
+One natural way to record that is to add a new column for each visit:
+
+| frog_id | weight_visit1 | weight_visit2 | weight_visit3 |
+|---------|----------------|----------------|----------------|
+| 1       | 11.8           | 12.5           | 13.1           |
+| 2       | 9.4            | 10.0           |                |
+| 3       | 14.2           | 14.6           | 15.0           |
+
+This is called **wide** data — each visit gets its own column, so the
+table grows wider as you collect more observations over time. It's a
+format people often reach for instinctively, since it's compact and easy
+to scan by eye.
+
+The same information can also be recorded like this, with one row per
+frog *per visit*:
+
+| frog_id | visit | weight |
+|---------|-------|--------|
+| 1       | 1     | 11.8   |
+| 1       | 2     | 12.5   |
+| 1       | 3     | 13.1   |
+| 2       | 1     | 9.4    |
+| 2       | 2     | 10.0   |
+| 3       | 1     | 14.2   |
+| 3       | 2     | 14.6   |
+| 3       | 3     | 15.0   |
+
+This is **long** data — each observation (one frog, on one visit) gets
+its own row, and "visit" becomes its own variable instead of being spread
+across column headers.
+
+Only one of these is tidy. In the wide version, `weight` is really one
+variable, but it's split across three separate columns
+(`weight_visit1`, `weight_visit2`, `weight_visit3`) — which means the
+column headers themselves (`visit1`, `visit2`, `visit3`) are actually
+*values* of a variable, not variable names. That's exactly the kind of
+problem this chapter has been warning about throughout: a computer
+reading this table has no way to know that those three columns all
+represent the same underlying variable, weight. The long version doesn't
+have this problem — `weight` is one column, `visit` is one column, and
+each row is a single, unambiguous observation.
+
+Which format is "better" isn't about file size — despite what you might
+expect, long format doesn't reliably take up less space than wide format.
+Wide format stores each frog's ID once and spreads its measurements
+across columns; long format has to repeat that ID on every row instead.
+Long format only tends to win on size when the data is uneven — if frog 2
+were only measured twice instead of three times, wide format would still
+need a `weight_visit3` column for it, filled in with a blank, while long
+format simply wouldn't have that row at all.
+
+The real case for long/tidy format is about what you can *do* with the
+data, not how much space it takes up:
+
+- **Vectorized operations work directly.** Filtering, grouping, or
+  summarizing by `weight` only works cleanly when `weight` lives in one
+  column — not split across `weight_visit1`, `weight_visit2`, and
+  `weight_visit3`.
+- **The structure doesn't change as you collect more data.** A 4th site
+  visit just means more rows. In wide format, it means adding a new
+  column to the table itself, which can break code or tools that weren't
+  expecting the table to grow sideways.
+- **It handles uneven measurement counts naturally.** No need to pad
+  missing visits with blank cells.
+- **It's what tools like ggplot2 expect.** Mapping a variable to an axis,
+  color, or facet requires that variable to already be a single column.
+- **It's easier to join with other tables**, since long-format tables
+  share key columns cleanly.
+
+Wide format still has its place — it's often exactly the layout you'd
+want for a summary table in a report or presentation, where a human is
+doing the reading, and a handful of specific tools (correlation matrices,
+some repeated-measures formulas) expect wide input directly. But for data
+entry, storage, and analysis, long format is almost always the better
+default. Later in the course (Chapter 13), you'll learn the
+`pivot_longer()` and `pivot_wider()` functions from the tidyverse, which
+convert a dataset between these two formats in a single line of code —
+so if you ever do need the wide layout for a table or plot, you're never
+stuck re-entering your data by hand to get it.
+
+**Try it now:** Look back at the wide table above. Frog 2 has a blank
+cell under `weight_visit3`. Does that blank mean the same thing here as
+it did earlier in the chapter — a measurement that's genuinely missing —
+or could it mean something else in this context (hint: think about what
+a blank half-way through a season of repeat visits might indicate about
+when the frog was actually captured)? There's no single right answer;
+the point is to notice that "missing" can mean different things
+depending on the structure of your data.
+
+## Document, document, document
+
+Following the practices in this chapter should mean most of your data
+processing can happen automatically in code, with no manual spreadsheet
+editing required. But if you ever do need to make a manual correction —
+fixing a typo, standardizing a category — treat it the same way you treat
+raw data more generally (Chapter 1): never edit the raw file directly.
+Save your correction as a new file, and write down exactly what you
+changed and why in your project's README, so that the path from raw data
+to analysis-ready data is fully traceable later.
+
+## In-Class Activity: Tracing a Real Case Study Through Tidy Data
+
+For this activity, you won't write any code — instead, you'll work through
+a real published case study by hand, tracking how a dataset changes shape
+at each step of an analysis, and checking whether it stays tidy along the
+way. This case study comes from Hadley Wickham's 2014 paper "Tidy Data,"
+which we'll return to again once you've learned R and the tidyverse later
+in the course — for now, the goal is just to get comfortable reasoning
+about variables, observations, and tidiness across a multi-step analysis.
+
+### The dataset
+
+The case study uses individual-level mortality records from Mexico:
+539,530 deaths recorded in 2008, with 55 variables per death, including
+the date, time, and cause. A small sample of five of those variables looks
+like this:
+
+| yod  | mod | dod | hod | cod |
+|------|-----|-----|-----|-----|
+| 2008 | 1   | 1   | 1   | B20 |
+| 2008 | 1   | 2   | 4   | I67 |
+| 2008 | 1   | 3   | 8   | I50 |
+| 2008 | 1   | 4   | 12  | I50 |
+| 2008 | 1   | 5   | 16  | K70 |
+| 2008 | 1   | 6   | 18  | I21 |
+| 2008 | 1   | 7   | 20  | I21 |
+| 2008 | 1   | 8   |     | K74 |
+
+(`yod`/`mod`/`dod` = year/month/day of death, `hod` = hour of death, `cod`
+= cause of death, coded using a standard disease classification system.)
+
+**Question 1:** What does one row represent here — what's the observation?
+What are the variables? Using what you learned earlier in this chapter,
+is this table tidy? Why or why not?
+
+### The goal
+
+The researcher's question is: *do some causes of death have an unusual
+pattern of what time of day they happen, compared to deaths in general?*
+For instance, maybe traffic accidents cluster around commute hours, while
+heart attacks don't follow any particular hourly pattern at all.
+
+### Step 1: Counting deaths by hour and cause
+
+The first step collapses the 539,530 individual death records down into
+one row per hour-of-day/cause-of-day combination, counting how many
+deaths of each cause happened in each hour. A few rows of the result look
+like this:
+
+| hod | cod | freq |
+|-----|-----|------|
+| 8   | B16 | 4    |
+| 8   | E84 | 3    |
+| 8   | I21 | 2205 |
+| 8   | N18 | 315  |
+| 9   | B16 | 7    |
+| 9   | I21 | 2209 |
+
+**Question 2:** What changed about what a "row" represents, compared to
+the original table? Is this new table still tidy? What are its variables?
+
+### Step 2: Joining in disease names
+
+The disease codes (`B16`, `I21`, etc.) aren't meaningful on their own, so
+the researcher combines this table with a second lookup table that maps
+each code to a readable disease name, matching rows using the shared `cod`
+column. The result adds one new column, `disease`:
+
+| hod | cod | freq | disease                     |
+|-----|-----|------|------------------------------|
+| 8   | B16 | 4    | Acute hepatitis B            |
+| 8   | I21 | 2205 | Acute myocardial infarction  |
+| 9   | B16 | 7    | Acute hepatitis B            |
+| 9   | I21 | 2209 | Acute myocardial infarction  |
+
+**Question 3:** Two separate tables (the hourly counts, and the disease
+code lookup) got combined into one, matched on a shared column. Why might
+it be better to store the disease code separately from the readable name
+in the first place, rather than just writing out the disease name every
+time, from the very start of data entry? (Hint: think back to the
+"problematic column names" and "consistent spelling" issues from earlier
+in this chapter.)
+
+### Step 3: Converting counts to proportions
+
+Some causes of death are far more common than others — about 46,800
+deaths from heart attack that year, versus only about 10 from avalanche.
+Comparing raw counts across causes this different in scale wouldn't be
+meaningful, so the researcher instead computes, for each cause, what
+*proportion* of that cause's deaths happened in each hour (each cause's
+proportions sum to 1 across all 24 hours):
+
+| hod | cod | freq | disease                     | prop |
+|-----|-----|------|------------------------------|------|
+| 8   | B16 | 4    | Acute hepatitis B            | 0.04 |
+| 8   | I21 | 2205 | Acute myocardial infarction  | 0.05 |
+| 9   | B16 | 7    | Acute hepatitis B            | 0.07 |
+| 9   | I21 | 2209 | Acute myocardial infarction  | 0.05 |
+
+**Question 4:** This calculation had to be done separately *within* each
+disease (each disease's proportions are computed only from that disease's
+own hourly counts, not mixed with any other disease's numbers). Why does
+having the data in tidy form — one row per hour/cause combination — make
+it possible to calculate this "by group" without needing to physically
+split the data into separate tables first?
+
+### Step 4: Adding the overall baseline pattern
+
+To tell whether a disease's hourly pattern is unusual, you need something
+to compare it to: the overall hourly death rate, across all causes
+combined. The researcher computes that separately, then merges it back
+into the same table as a new column, `prop_all`, so every row can be
+compared directly against the population-wide baseline for that hour:
+
+| hod | cod | freq | disease                     | prop | prop_all |
+|-----|-----|------|------------------------------|------|----------|
+| 8   | B16 | 4    | Acute hepatitis B            | 0.04 | 0.04     |
+| 8   | I21 | 2205 | Acute myocardial infarction  | 0.05 | 0.04     |
+| 9   | B16 | 7    | Acute hepatitis B            | 0.07 | 0.04     |
+| 9   | I21 | 2209 | Acute myocardial infarction  | 0.05 | 0.04     |
+
+**Question 5:** Notice `prop_all` repeats the same value (0.04) for every
+disease within hour 8, and a different repeated value for hour 9. Does
+this repetition violate any tidy data principle? Why or why not?
+
+### Step 5: Measuring how "unusual" each disease is
+
+For each disease, the researcher now has two columns to compare: its own
+hourly pattern (`prop`) and the overall baseline (`prop_all`). Taking the
+average squared difference between these two columns, across all 24
+hours, gives a single number per disease measuring how much that disease's
+timing deviates from the population-wide pattern. Diseases with very few
+total deaths (under 50 for the year) are excluded, since their hourly
+patterns are too noisy to say anything meaningful.
+
+**Question 6:** This step collapses 24 rows (one per hour) down to a
+single deviation score, one per disease. What table structure would you
+expect this result to have — what's a row, and what are the columns?
+
+### Step 6: Flagging the unusual diseases
+
+Plotting each disease's deviation score against its total death count (on
+a log-log scale) and fitting a trend line, the researcher flags diseases
+whose deviation is much higher than expected for their sample size — a
+residual greater than 1.5 above the trend line.
+
+The diseases that stood out fell into three groups, each with a distinct
+daily rhythm: homicide deaths clustered in the evening/nighttime hours;
+drowning deaths clustered in the afternoon; and transportation-related
+deaths clustered around typical commute hours.
+
+**Question 7:** Look back over Steps 1–6. At no point did the data need
+to be reshaped into a "wide" format (with separate columns for each hour,
+or each disease) to perform any of these calculations — counting,
+joining, computing proportions, merging in a baseline, and measuring
+deviation. Why do you think keeping the data in this consistent
+long/tidy shape throughout made each of these steps easier than it would
+have been in some other layout?
+
+### What to submit in Canvas
+
+Submit your written answers to Questions 1–7. There's no single "correct"
+phrasing expected — the goal is to demonstrate that you can identify
+variables, observations, and tidiness at each stage of a real analysis,
+and reason about why the tidy structure was helpful throughout.
+
+## References
+
+- Data Carpentry lesson on spreadsheets for ecology:
+  <https://datacarpentry.org/spreadsheet-ecology-lesson>
+- Wickham, Hadley. "Tidy data." *Journal of Statistical Software* 59.10
+  (2014): 1-23.
+- White, Ethan P., et al. "Nine simple ways to make it easier to (re)use
+  your data." *Ideas in Ecology and Evolution* 6.2 (2013).
