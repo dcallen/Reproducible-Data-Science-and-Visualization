@@ -513,8 +513,8 @@ compared directly against the population-wide baseline for that hour:
 |-----|-----|------|------------------------------|------|----------|
 | 8   | B16 | 4    | Acute hepatitis B            | 0.04 | 0.04     |
 | 8   | I21 | 2205 | Acute myocardial infarction  | 0.05 | 0.04     |
-| 9   | B16 | 7    | Acute hepatitis B            | 0.07 | 0.04     |
-| 9   | I21 | 2209 | Acute myocardial infarction  | 0.05 | 0.04     |
+| 9   | B16 | 7    | Acute hepatitis B            | 0.07 | 0.05     |
+| 9   | I21 | 2209 | Acute myocardial infarction  | 0.05 | 0.05     |
 
 **Question 5:** Notice `prop_all` repeats the same value (0.04) for every
 disease within hour 8, and a different repeated value for hour 9. Does
