@@ -1,0 +1,198 @@
+# Relational Databases
+
+So far, we've focused on keeping a single spreadsheet tidy. But most real
+research projects don't fit neatly into one table — you end up with
+several related tables, each describing a different piece of the same
+underlying system. This chapter introduces relational databases: a way of
+organizing multiple related tables so that a computer, not just you, can
+understand how they connect.
+
+## What is a relational database?
+
+A relational database is a collection of interrelated tables. The
+relationships between tables represent actual relationships between data
+entities — relationships that always exist in real life, no matter how we
+choose to store the data, but that only become explicit to the computer
+once we structure our data as a relational database.
+
+Consider our frog fieldwork: the first time we capture an individual, we
+record its sex and assign it an ID. Every time we recapture that same
+individual, we take new biometric measurements. If we stored this in a
+single spreadsheet, we'd naturally end up with two tables: one listing
+every frog we've ever caught along with its ID and sex, and a second
+listing every biometric measurement, with a given frog's ID appearing
+multiple times (once per recapture). These two tables are related, because
+they both describe the same individuals — but a computer reading them in
+has no way of knowing that unless we tell it. A relational database is how
+we translate a real-world relationship (these two tables both describe the
+same frogs) into a structural relationship the computer can use.
+
+## Why bother with relational databases?
+
+It's fair to ask: if we already know how our tables relate, why bother
+formalizing it? A few reasons.
+
+First, designing a relational database forces you to think critically
+about the real-life relationships in your data — relationships that are
+easy to take for granted, and that many data inconsistencies trace back to
+overlooking.
+
+Second, an explicit structure enables quality control that a spreadsheet
+can't give you. Imagine adding a table of capture and mortality dates for
+each frog, alongside the morphometrics table. It's logically impossible
+for any biometric measurement to have been taken before an individual was
+first captured, or after it died. In a spreadsheet, a data entry error like
+this could sit unnoticed indefinitely. In a relational database, this kind
+of impossible relationship can be flagged automatically.
+
+Third, relational databases avoid redundancy. There's no need to repeat a
+frog's sex and first-capture date on every single measurement row — as
+long as the two tables share the frog's ID, we can always look up and
+combine that information on demand. This improves accuracy (nothing to
+accidentally enter inconsistently across rows) and saves storage space.
+
+There are further advantages beyond what we'll use directly in this
+course: relational databases process large volumes of data extremely
+quickly; when stored on an external server, they let every collaborator
+work off one centralized, always-current copy of the data, with
+permissions controlling who can read versus write; and because computation
+happens on the server rather than your own machine, they don't tax your
+computer's memory. Understanding relational databases is also foundational
+to working with data in many other tools and languages beyond R.
+
+## Database components
+
+The core unit of a relational database is a **table**: rows (records) and
+columns (fields). Each row is one observation, and each column is one
+variable — the same tidy data principle from Chapter 4 applies here too.
+
+Tables relate to each other through **foreign keys** — a variable shared
+between two tables. In our frog example, the frog ID is the foreign key
+linking each biometric measurement back to that individual's static
+information (sex, first capture date). Foreign keys are what make a
+relational database "relational" — a table can have one or more of them,
+each linking it to a different related table.
+
+Every table also has a **primary key**: a unique identifier for each
+record in that table. Sometimes an existing variable works well as a
+primary key — frog ID, for instance, uniquely identifies each row in the
+"individual info" table, since each frog appears there only once. But that
+same frog ID would *not* work as the primary key for the morphometrics
+table, since a frog's ID repeats across every recapture. When no existing
+variable is unique enough, we simply add a new column — often just a
+serial number — whose only job is to uniquely identify each row.
+
+**Try it now:** Look at this table of frog diet samples:
+
+| diet_item_id | diet_sample_id | frog_id | food_item |
+|---------------|------------------|----------|------------|
+| 1             | 101              | 3        | fly        |
+| 2             | 101              | 3        | ant        |
+| 3             | 102              | 7        | beetle     |
+| 4             | 103              | 3        | cricket    |
+
+Which column is the **primary key** — the one that uniquely identifies each
+row? Which columns are **foreign keys** — columns that link this table to
+another table? (Hint: there are two foreign keys here, not just one.) You
+don't need to know what the other tables look like yet — just identify
+which columns are doing the linking.
+
+## Database design and architecture
+
+A database's structure should mirror the real-world structure of the data
+— not whatever happens to be convenient in the moment. Designing a
+database is less about software and more about thinking carefully about
+how your data entities actually relate to each other.
+
+As a general rule, split tables by **sampling unit**. Data about individual
+frogs and data about the ponds they were caught in belong in separate
+tables — one has the frog as its unit, the other has the pond — related to
+each other through a shared pond ID.
+
+Sometimes two tables deserve to be split even when they share the same
+sampling unit. Our frog ID/sex table and our morphometrics table are both,
+technically, about individual frogs — but the first holds *static*
+information that doesn't change over time, while the second holds
+*dynamic*, repeated information collected across multiple visits. Rather
+than repeating the static information on every single measurement row,
+it's far more efficient to split static and dynamic information into
+separate tables, related through the frog ID.
+
+Every column should also hold only **atomic values** — values that can't
+be meaningfully divided further. This means splitting a "full name" column
+into separate first and last name columns, and never packing a list of
+several items into a single cell. Say we're recording frog diet, and each
+sample might contain several food items (a fly, an ant, a beetle). If the
+diet sample is the unit of our table, we'd end up cramming a list of items
+into one "food item" cell — no longer atomic. The fix is to make the food
+item itself the unit of the table: one row per item found, with the diet
+sample's ID repeated as a foreign key linking each item back to the sample
+it came from.
+
+**Try it now:** Imagine a field assistant hands you this table of frog
+capture events:
+
+| capture_id | frog_id | site_name    | latitude | longitude | capture_date |
+|-------------|----------|---------------|-----------|------------|----------------|
+| 1           | 3        | Alder Pond    | 41.7982   | -111.8181  | 2023-05-15     |
+| 2           | 7        | Beaver Creek  | 41.8104   | -111.7996  | 2023-05-16     |
+| 3           | 12       | Alder Pond    | 41.7982   | -111.8181  | 2023-05-16     |
+
+Using what you just learned about splitting tables by sampling unit: what's
+wrong with this table's design? What two tables should this actually be
+split into, and what column would link them together? (Hint: think about
+what happens if 50 more frogs get caught at Alder Pond — what data ends up
+repeated over and over?)
+
+## Data types
+
+Every column in a table has a defined **data type**: the kind of data it's
+allowed to hold. Common data types include character strings (text),
+numeric values (including special cases like integers), and boolean values
+(`TRUE`/`FALSE`). Different database systems recognize slightly different
+sets of data types, but these fundamentals are shared across nearly all of
+them.
+
+Because each column has a single associated data type, you can't mix types
+within the same column — an "age" column, for example, can't contain both
+`5` and `"adult"`. If you find yourself wanting to do this, it's usually a
+sign the column is trying to represent more than one variable at once (see
+"cramming two variables into one column," back in Chapter 4).
+
+## A first look at our practice database
+
+In the next chapter, we'll dive into SQL — the standard language for
+working with relational databases — and learn to write queries that
+retrieve and manipulate data, as well as build a database from scratch.
+The practice database we'll use throughout that chapter (and beyond)
+extends our running frog example into a full relational system.
+
+It's made up of 9 tables:
+
+- **frogs**: one row per individual, storing static information (sex,
+  first capture date, mortality date if known)
+- **capture_sites**: one row per site, storing its name and coordinates
+- **captures**: one row per capture event, linking a frog to the site and
+  date it was captured
+- **morphometrics**: one row per biometric measurement, linked to the frog
+  it was taken from
+- **diet**: one row per food item found in a diet sample, linked to both
+  the sample and the frog
+- **tags**: one row per GPS tag deployed in the project
+- **deployments**: one row per tag-on-frog deployment period, linking a
+  specific frog to a specific tag over a date range
+- **raw_gps_data**: one row per raw telemetry reading, as it came off the
+  tag, linked to the tag that recorded it
+- **processed_gps_data**: one row per cleaned, processed location, linked
+  back to the frog it belongs to
+
+Primary keys are unique identifiers within each table (frog ID, site ID,
+tag ID, and so on); foreign keys are the shared columns that connect
+tables together (a frog ID appearing in the captures table, a tag ID
+appearing in the deployments table). The diagram above shows how all nine
+tables connect.
+
+## References
+
+- Codd, E. F. "A relational model of data for large shared data banks."
+  *Communications of the ACM* 13.6 (1970): 377-387.

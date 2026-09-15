@@ -258,3 +258,78 @@ Submit the following:
 
 1. A screenshot of your repository's GitHub page showing your files.
 2. The URL to your GitHub repository.
+
+## Week 4: Designing a Tidy Spreadsheet for a Bear Research Case Study
+
+This week, you'll apply the tidy data principles from Chapter 4 to a new
+scenario — not your own final project dataset, but a case study describing
+a black bear research project. Real field data collection is often
+described informally, in field notes or verbal summaries, rather than
+handed to you as a ready-made spreadsheet. Your job is to translate a
+messy, informal description of a research project into a properly
+structured, tidy spreadsheet design.
+
+### The case study
+
+A research team is studying a black bear population in a mountainous study
+area. Here's how they describe their data collection process:
+
+> "We trap bears using culvert traps and snares placed at a handful of
+> fixed trap sites scattered across the study area. Every time we catch a
+> bear — whether it's the first time or a recapture — we record the date,
+> which trap site it was caught at, and the bear's ID (new bears get a new
+> ID; if we recognize an ear tag from a previous capture, we reuse that
+> ID). At first capture, we record the bear's sex. Every time we handle a
+> bear, whether it's a new capture or a recapture, we take its weight and
+> body length, and we note its age class (cub, yearling, or adult). Over
+> the course of the study, we catch dozens of different bears, some of
+> them multiple times, at several different trap sites, across several
+> field seasons."
+
+### What to do
+
+**1. Identify the variables and observations.**
+
+Read through the case study carefully. For each piece of information being
+collected, ask: what is being measured (a variable)? Then think about what
+a single row in your table should represent — one bear? One capture event?
+Be careful here: a bear that's caught three times shouldn't be squeezed
+into a single row, since its weight, length, age class, trap site, and
+date are all different at each capture.
+
+**2. Design your table.**
+
+Sketch out the column headers your table needs, keeping in mind that the
+same bear ID will appear on more than one row (once per capture), while
+other information (like sex) stays the same across all of that bear's
+rows. This is expected and fine — it's how a single tidy table
+accommodates repeated measurements on the same individual.
+
+**3. Build the actual spreadsheet template.**
+
+In Excel or Google Sheets, create your table with only column headers
+filled in — you don't need to invent or enter any actual data rows. Column
+headers should be computer-readable (following the naming conventions from
+Chapter 1: no spaces, no special characters, consistent capitalization).
+
+Pay close attention to the tidy data pitfalls from Chapter 4 as you design
+your headers: don't cram two variables into one column (like age class and
+sex), don't let a single cell need to hold more than one value, and make
+sure your table's unit of observation is consistent row to row.
+
+**4. Write a short justification.**
+
+In a separate document (or as a second tab/sheet), briefly explain:
+
+- What a single row in your table represents.
+- At least one specific design decision where the case study's informal
+  description could have easily led to an un-tidy spreadsheet, and how
+  your design avoids that trap.
+
+### What to submit
+
+Submit the following to Canvas:
+
+1. Your spreadsheet file (.xlsx or a link to a Google Sheet with sharing
+   enabled), containing only column headers filled in.
+2. Your written justification (1 paragraph is sufficient).
