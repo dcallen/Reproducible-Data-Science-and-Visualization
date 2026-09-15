@@ -167,6 +167,79 @@ retrieve and manipulate data, as well as build a database from scratch.
 The practice database we'll use throughout that chapter (and beyond)
 extends our running frog example into a full relational system.
 
+<div class="mermaid">
+erDiagram
+  FROGS ||--o{ CAPTURES : "captured in"
+  FROGS ||--o{ MORPHOMETRICS : "measured in"
+  FROGS ||--o{ DIET : "sampled in"
+  FROGS ||--o{ DEPLOYMENTS : "wears"
+  CAPTURE_SITES ||--o{ CAPTURES : "location of"
+  TAGS ||--o{ DEPLOYMENTS : "assigned in"
+  TAGS ||--o{ RAW_GPS_DATA : "recorded by"
+  FROGS ||--o{ PROCESSED_GPS_DATA : "tracked in"
+  FROGS {
+    int frog_id PK
+    string sex
+    date first_capture_date
+    date mortality_date
+  }
+  CAPTURE_SITES {
+    int site_id PK
+    string site_name
+    float latitude
+    float longitude
+  }
+  CAPTURES {
+    int capture_id PK
+    int frog_id FK
+    int site_id FK
+    date capture_date
+  }
+  MORPHOMETRICS {
+    int record_id PK
+    int frog_id FK
+    date measurement_date
+    float weight_g
+    float length_mm
+  }
+  DIET {
+    int diet_item_id PK
+    int diet_sample_id
+    int frog_id FK
+    string food_item
+  }
+  TAGS {
+    int tag_id PK
+    string tag_model
+  }
+  DEPLOYMENTS {
+    int deployment_id PK
+    int frog_id FK
+    int tag_id FK
+    date deployed_date
+    date retrieved_date
+  }
+  RAW_GPS_DATA {
+    int reading_id PK
+    int tag_id FK
+    datetime timestamp
+    float raw_lat
+    float raw_lon
+  }
+  PROCESSED_GPS_DATA {
+    int location_id PK
+    int frog_id FK
+    datetime timestamp
+    float lat
+    float lon
+  }
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true });
+</script>
+
 It's made up of 9 tables:
 
 - **frogs**: one row per individual, storing static information (sex,
