@@ -109,25 +109,47 @@ Each of those "many" tables includes the frog ID as a foreign key,
 pointing back to a single row in the frogs table. Most of the
 relationships in our frog database are one to many.
 
-A **many to many** relationship is a bit different: it's when many rows in
-one table can each relate to many rows in another table, and vice versa.
-Think about frogs and food items. A single frog might eat many different
-kinds of food over the course of the study (flies, ants, beetles), and a
-single food item, like "fly," might show up in many different frogs' diet
-samples. Neither table alone can hold this relationship cleanly. If you
-tried to add a "diet" column to the frogs table, you'd need to cram a list
-of food items into one cell, breaking atomicity. If you tried to add a
-"frogs that ate this" column to a food items table, you'd have the same
-problem in reverse.
+A **many to many** relationship is different, because the relationship
+goes both directions at once. Think about frogs and food items. One frog
+can eat many different food items over the course of the study (a fly, an
+ant, a beetle). But it's also true in the other direction: one food item,
+say "fly," isn't unique to a single frog. Many different frogs might eat
+flies. So it isn't "one frog has many food items" in the same clean way
+that "one frog has many captures" works. It's "many frogs relate to many
+food items, and many food items relate to many frogs." Neither side gets
+to be the "one."
+
+This is exactly why a many to many relationship can't be handled the same
+way as a one to many relationship. If you tried to add a "diet" column
+directly to the frogs table, you'd need to somehow fit several food items
+into a single frog's row (`fly, ant, beetle`), breaking the atomicity
+principle from earlier in this chapter (one cell, one value). If instead
+you tried adding a "frogs that ate this" column to a food items table,
+you'd hit the same problem in reverse: one food item's row would need to
+list multiple frog IDs.
 
 The standard solution is a **junction table** (sometimes called a bridge
-table), a table whose entire purpose is to record which combinations
-occurred. Our diet table already works this way: each row links one frog
-to one food item observed in one sample, and the same frog ID or the same
-food item can appear on many different rows. You don't need to design
-anything extra to handle a many to many relationship. You just need to
-recognize when a junction table is required, rather than trying to force
-the relationship into one of the two related tables directly.
+table): a third table, sitting between the two related tables, where each
+row records exactly one individual pairing. Our diet table already works
+this way:
+
+| diet_item_id | diet_sample_id | frog_id | food_item |
+|---------------|------------------|----------|------------|
+| 1             | 101              | 3        | fly        |
+| 2             | 101              | 3        | ant        |
+| 3             | 102              | 7        | fly        |
+
+Notice that frog_id `3` appears twice (that frog ate two different
+things), and `fly` also appears twice (two different frogs both ate
+flies). Neither column is unique on its own, and that's the signature of a
+many to many relationship: rather than trying to cram a list into either
+side, the junction table simply lists every individual pairing as its own
+row.
+
+You don't need to design anything unusual to handle a many to many
+relationship. You just need to recognize when a junction table is
+required, rather than trying to force the relationship directly into one
+of the two related tables.
 
 ## Database design and architecture
 
@@ -224,7 +246,7 @@ retrieve and manipulate data, as well as build a database from scratch.
 The practice database we'll use throughout that chapter (and beyond)
 extends our running frog example into a full relational system.
 
-![Entity relationship diagram of the frog practice database, showing nine tables and how they connect through primary and foreign keys.](img/frog-database-schema.png)
+![Diagram of the frog  database, showing nine tables and how they connect through primary and foreign keys (PK and FK, respectively).](img/frog-database-schema.png)
 
 It's made up of 9 tables:
 
