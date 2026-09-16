@@ -167,6 +167,8 @@ retrieve and manipulate data, as well as build a database from scratch.
 The practice database we'll use throughout that chapter (and beyond)
 extends our running frog example into a full relational system.
 
+```{r, echo=FALSE, results='asis'}
+cat('
 <div class="mermaid">
 erDiagram
   FROGS ||--o{ CAPTURES : "captured in"
@@ -239,6 +241,8 @@ erDiagram
 <script>
   mermaid.initialize({ startOnLoad: true });
 </script>
+')
+```
 
 It's made up of 9 tables:
 
