@@ -1,9 +1,3 @@
-book_filename: "course-book"
-delete_merged_file: true
-language:
-  ui:
-    chapter_name: "Chapter "
-output_dir: "docs"
 rmd_files: [
   "index.Rmd",
   "01-project-organization.Rmd",
@@ -11,6 +5,6 @@ rmd_files: [
   "03-github.Rmd",
   "04-tidy-data.Rmd",
   "05-relational-databases.Rmd",
+  "06-sql.Rmd",
   "assignments.Rmd"
 ]
-new_session: yes
