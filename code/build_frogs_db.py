@@ -1,6 +1,6 @@
 """
 Build frogs.sqlite: the practice relational database for the course,
-mirroring the 9-table schema shown in Chapter 5.
+mirroring the 10-table schema shown in Chapter 5.
 """
 import sqlite3
 import random
@@ -23,7 +23,8 @@ DROP TABLE IF EXISTS processed_gps_data;
 DROP TABLE IF EXISTS raw_gps_data;
 DROP TABLE IF EXISTS deployments;
 DROP TABLE IF EXISTS tags;
-DROP TABLE IF EXISTS diet;
+DROP TABLE IF EXISTS diet_asv_reads;
+DROP TABLE IF EXISTS diet_asvs;
 DROP TABLE IF EXISTS morphometrics;
 DROP TABLE IF EXISTS captures;
 DROP TABLE IF EXISTS capture_sites;
@@ -58,11 +59,21 @@ CREATE TABLE morphometrics (
     length_mm REAL
 );
 
-CREATE TABLE diet (
-    diet_item_id INTEGER PRIMARY KEY,
+CREATE TABLE diet_asvs (
+    asv_id INTEGER PRIMARY KEY,
+    dna_sequence TEXT NOT NULL,
+    order_name TEXT,
+    family TEXT,
+    genus TEXT,
+    species TEXT
+);
+
+CREATE TABLE diet_asv_reads (
+    read_id INTEGER PRIMARY KEY,
     diet_sample_id INTEGER NOT NULL,
     frog_id INTEGER NOT NULL REFERENCES frogs(frog_id),
-    food_item TEXT NOT NULL
+    asv_id INTEGER NOT NULL REFERENCES diet_asvs(asv_id),
+    read_count INTEGER NOT NULL
 );
 
 CREATE TABLE tags (
@@ -110,8 +121,29 @@ TAG_MODELS = ["e-obs 2g", "Lotek PinPoint 75", "ATS G5"]
 tags = [(i, random.choice(TAG_MODELS)) for i in range(1, 13)]
 cur.executemany("INSERT INTO tags VALUES (?,?)", tags)
 
+TAXA_DATA = [
+    (1,  "Diptera",        "Chironomidae", None,      None),
+    (2,  "Diptera",        "Culicidae",    "Aedes",   None),
+    (3,  "Hymenoptera",    "Formicidae",   None,      None),
+    (4,  "Coleoptera",     None,           None,      None),
+    (5,  "Araneae",        None,           None,      None),
+    (6,  "Hemiptera",      "Aphididae",    None,      None),
+    (7,  "Diptera",        "Tipulidae",    "Tipula",  None),
+    (8,  "Hemiptera",      "Gerridae",     "Gerris",  "remigis"),
+    (9,  "Odonata",        None,           None,      None),
+    (10, "Ephemeroptera",  None,           None,      None),
+    (11, "Collembola",     None,           None,      None),
+]
+BASES = "ACGT"
+def random_seq(n=150):
+    return "".join(random.choice(BASES) for _ in range(n))
+
+diet_asvs = [(asv_id, random_seq(), order_, family, genus, species)
+             for (asv_id, order_, family, genus, species) in TAXA_DATA]
+cur.executemany("INSERT INTO diet_asvs VALUES (?,?,?,?,?,?)", diet_asvs)
+
 # ---------------------------------------------------------------------
-# Frogs, captures, morphometrics, diet
+# Frogs, captures, morphometrics
 # ---------------------------------------------------------------------
 
 N_FROGS = 40
@@ -120,14 +152,11 @@ season_start = date(2023, 5, 1)
 frogs = []
 captures = []
 morphometrics = []
-diet_rows = []
+diet_sample_ids = []  # (diet_sample_id, frog_id) pairs, one per sample taken
 
 capture_id = 1
 record_id = 1
-diet_item_id = 1
 diet_sample_id = 1
-
-FOOD_ITEMS = ["fly", "ant", "beetle", "cricket", "spider", "moth", "mosquito", "aphid"]
 
 for frog_id in range(1, N_FROGS + 1):
     sex = random.choice(["male", "female"])
@@ -168,10 +197,7 @@ for frog_id in range(1, N_FROGS + 1):
 
         # diet sample taken at ~60% of captures
         if random.random() < 0.6:
-            n_items = random.randint(1, 4)
-            for item in random.sample(FOOD_ITEMS, n_items):
-                diet_rows.append((diet_item_id, diet_sample_id, frog_id, item))
-                diet_item_id += 1
+            diet_sample_ids.append((diet_sample_id, frog_id))
             diet_sample_id += 1
 
         capture_id += 1
@@ -179,7 +205,22 @@ for frog_id in range(1, N_FROGS + 1):
 cur.executemany("INSERT INTO frogs VALUES (?,?,?,?)", frogs)
 cur.executemany("INSERT INTO captures VALUES (?,?,?,?)", captures)
 cur.executemany("INSERT INTO morphometrics VALUES (?,?,?,?,?)", morphometrics)
-cur.executemany("INSERT INTO diet VALUES (?,?,?,?)", diet_rows)
+
+# ---------------------------------------------------------------------
+# Diet ASV reads: each diet sample gets 2-5 ASVs detected, with read counts
+# ---------------------------------------------------------------------
+
+diet_asv_reads = []
+read_id = 1
+for sample_id, frog_id in diet_sample_ids:
+    n_asvs = random.randint(2, 5)
+    chosen = random.sample(range(1, len(TAXA_DATA) + 1), n_asvs)
+    for asv_id in chosen:
+        read_count = random.randint(50, 5000)
+        diet_asv_reads.append((read_id, sample_id, frog_id, asv_id, read_count))
+        read_id += 1
+
+cur.executemany("INSERT INTO diet_asv_reads VALUES (?,?,?,?,?)", diet_asv_reads)
 
 # ---------------------------------------------------------------------
 # Deployments + GPS data (only a subset of frogs get tagged)
@@ -238,7 +279,8 @@ conn.commit()
 # ---------------------------------------------------------------------
 
 for table in ["frogs", "capture_sites", "captures", "morphometrics",
-              "diet", "tags", "deployments", "raw_gps_data", "processed_gps_data"]:
+              "diet_asvs", "diet_asv_reads", "tags", "deployments",
+              "raw_gps_data", "processed_gps_data"]:
     n = cur.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
     print(f"{table}: {n} rows")
 

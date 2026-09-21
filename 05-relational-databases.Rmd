@@ -130,8 +130,8 @@ list multiple frog IDs.
 
 The standard solution is a **junction table** (sometimes called a bridge
 table): a third table, sitting between the two related tables, where each
-row records exactly one individual pairing. Our diet table already works
-this way:
+row records exactly one individual pairing. If we were recording diet by
+eye, a junction table might look like this:
 
 | diet_item_id | diet_sample_id | frog_id | food_item |
 |---------------|------------------|----------|------------|
@@ -161,17 +161,30 @@ Variants, or ASVs, detected in that sample, each one representing a
 distinct organism whose DNA turned up. This gives us a real world many to
 many relationship with a bit more structure to it.
 
-We need two tables to represent this properly. First, a table of every
-unique ASV detected anywhere in the study, along with its taxonomic
-identification:
+This is what our actual database uses: two tables, `diet_asvs` and
+`diet_asv_reads`, in place of the simplified food item table above.
 
-| asv_id | dna_sequence | taxon |
-|---------|----------------|--------|
-| 1       | ACGTACGT...    | Chironomidae |
-| 2       | TTGACGTA...    | Formicidae |
+First, `diet_asvs`, a table of every unique ASV detected anywhere in the
+study, along with its taxonomic identification. Real metabarcoding results
+often resolve some ASVs all the way to species, while others can only
+confidently be assigned to family or order, so this table has a separate
+column for each taxonomic rank, with unresolved ranks left blank:
 
-Second, a table recording which ASVs turned up in which diet samples, and
-how many sequencing reads supported that detection:
+| asv_id | dna_sequence | order_name | family | genus | species |
+|---------|----------------|--------------|----------|---------|-----------|
+| 1       | ACGTACGT...    | Diptera      | Chironomidae |         |         |
+| 2       | TTGACGTA...    | Hymenoptera  | Formicidae   |         |         |
+| 3       | GGCATTAC...    | Hemiptera    | Gerridae     | Gerris  | remigis |
+
+Splitting order, family, genus, and species into their own columns, rather
+than combining them into a single "taxon" column, is another application
+of the atomicity principle from earlier in this chapter: each column
+should hold one piece of information, and order, family, genus, and
+species are four separate pieces of information, even though they're
+related to each other.
+
+Second, `diet_asv_reads`, a table recording which ASVs turned up in which
+diet samples, and how many sequencing reads supported that detection:
 
 | read_id | diet_sample_id | frog_id | asv_id | read_count |
 |----------|-------------------|----------|----------|--------------|
@@ -179,7 +192,7 @@ how many sequencing reads supported that detection:
 | 2        | 101               | 3        | 2        | 448          |
 | 3        | 102               | 7        | 1        | 787          |
 
-This second table is the junction table: one diet sample can contain many
+`diet_asv_reads` is the junction table: one diet sample can contain many
 ASVs, and one ASV (say, Chironomidae) can show up across many different
 frogs' samples. Neither side is the "one" in the relationship, exactly the
 many to many pattern described above. The read_count column is a good
@@ -283,9 +296,9 @@ retrieve and manipulate data, as well as build a database from scratch.
 The practice database we'll use throughout that chapter (and beyond)
 extends our running frog example into a full relational system.
 
-![Entity relationship diagram of the frog practice database, showing eleven tables and how they connect through primary and foreign keys.](img/frog-database-schema.png)
+![Entity relationship diagram of the frog practice database, showing ten tables and how they connect through primary and foreign keys.](img/frog-database-schema.png)
 
-It's made up of 11 tables:
+It's made up of 10 tables:
 
 - **frogs**: one row per individual, storing static information (sex,
   first capture date, mortality date if known)
@@ -294,13 +307,11 @@ It's made up of 11 tables:
   date it was captured
 - **morphometrics**: one row per biometric measurement, linked to the frog
   it was taken from
-- **diet**: one row per food item found in a diet sample, linked to both
-  the sample and the frog (this is the junction table for the many to many
-  relationship between frogs and food items, discussed above)
-- **asvs**: one row per unique Amplicon Sequence Variant detected across
-  the whole study, with its DNA sequence and taxonomic identification
-- **asv_reads**: one row per ASV detected within a given diet sample, with
-  a read count (the junction table for the many to many relationship
+- **diet_asvs**: one row per unique Amplicon Sequence Variant detected
+  across the whole study, with its DNA sequence and taxonomic
+  identification
+- **diet_asv_reads**: one row per ASV detected within a given diet sample,
+  with a read count (the junction table for the many to many relationship
   between diet samples and ASVs, discussed above)
 - **tags**: one row per GPS tag deployed in the project
 - **deployments**: one row per tag on frog deployment period, linking a
@@ -313,11 +324,10 @@ It's made up of 11 tables:
 Primary keys are unique identifiers within each table (frog ID, site ID,
 tag ID, and so on). Foreign keys are the shared columns that connect
 tables together (a frog ID appearing in the captures table, a tag ID
-appearing in the deployments table). The diagram above shows how all
-eleven tables connect. Most relationships shown are one to many, except
-for the frogs to diet relationship and the diet sample to ASV
-relationship, both of which are many to many, handled through their
-respective junction tables.
+appearing in the deployments table). The diagram above shows how all ten
+tables connect. Most relationships shown are one to many, except for the
+diet sample to ASV relationship, which is many to many, handled through
+the diet_asv_reads junction table.
 
 ## References
 
