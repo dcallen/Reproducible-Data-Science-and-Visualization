@@ -333,3 +333,276 @@ Submit the following to Canvas:
 1. Your spreadsheet file (.xlsx or a link to a Google Sheet with sharing
    enabled), containing only column headers filled in.
 2. Your written justification (1 paragraph is sufficient).
+
+## Week 5 Assignment: Querying the Bird Nest Box Database
+
+This assignment uses a new practice database, `birds.sqlite`, covering a
+nest box study with three habitat types (farmland, residential, forest).
+Adults are banded, GPS-tagged, and have blood hormone samples and gut
+microbiome samples taken. Hatchlings are banded and sexed at hatch,
+measured regularly until fledging, and GPS-tagged just before fledging.
+
+Unlike the in-class activity in Chapter 6, this time you're given five
+complete, working queries. Your job isn't to write SQL from scratch, it's
+to run each query, understand what it's doing, and interpret what the
+result actually tells you biologically. This is just as important a skill
+as writing queries in the first place: in practice, you'll often be
+reading and adapting someone else's SQL (a labmate's, a collaborator's,
+your own from six months ago) far more often than starting from a blank
+page.
+
+### Getting the data
+
+`birds.sqlite` lives in the `data/` folder of the course repository,
+alongside `frogs.sqlite`. If you already cloned the repo back in Chapter
+6, just make sure you're up to date:
+
+### Setup
+
+```{r, eval=FALSE}
+library(DBI)
+
+con <- dbConnect(RSQLite::SQLite(), "data/birds.sqlite")
+dbListTables(con)
+```
+
+### Query 1: Do males and females differ in nest attendance during incubation?
+
+Neither `nests` nor `gps_fixes` has a column that says "this bird was
+incubating right now." Instead, we infer it: a GPS fix very close to the
+nest box's coordinates (within a small distance threshold) during the
+incubation period (before the eggs hatch) is treated as "at the nest."
+Everything else counts as "away." For the purposes of this example, the 
+researchers set a distance threshold of 0.003 degrees from the nest box to 
+determine at the nest vs. away.
+
+```{r, eval=FALSE}
+dbGetQuery(con, "
+  SELECT
+    b.sex,
+    SUM(CASE WHEN (ABS(g.lat - nb.latitude) + ABS(g.lon - nb.longitude)) < 0.003
+             THEN 1 ELSE 0 END) AS nest_fixes,
+    COUNT(*) AS total_fixes,
+    ROUND(100.0 * SUM(CASE WHEN (ABS(g.lat - nb.latitude) + ABS(g.lon - nb.longitude)) < 0.003
+                           THEN 1 ELSE 0 END) / COUNT(*), 1) AS pct_at_nest
+  FROM gps_fixes g
+  JOIN deployments d ON g.tracker_id = d.tracker_id
+  JOIN birds b ON d.bird_id = b.bird_id
+  JOIN nests n ON b.bird_id IN (n.female_id, n.male_id)
+  JOIN nest_boxes nb ON n.box_id = nb.box_id
+  WHERE g.timestamp <= n.hatch_date
+    AND b.entry_stage != 'hatchling'
+  GROUP BY b.sex;
+")
+```
+
+**Question:** Based on the output, do males or females spend more time at
+the nest during incubation? Does this match what you'd expect
+biologically, or does it surprise you? 
+
+**Question:** The distance threshold, `0.003` degrees, is a simplification,
+real studies would use a proper distance calculation and a threshold
+chosen based on GPS accuracy and nest box spacing.
+
+Write a query that finds the distance between every pair of nest boxes,
+and identifies the two closest boxes and how far apart they are. (Hint:
+this requires joining the `nest_boxes` table to itself, a **self-join**,
+something we haven't explicitly covered yet. You can join a table to
+itself just like any other join, just give each copy a different alias,
+e.g. `FROM nest_boxes a JOIN nest_boxes b ON a.box_id < b.box_id`, then
+compute a distance between `a`'s and `b`'s coordinates. The `<` in the
+`ON` clause, rather than `!=`, avoids getting every pair twice and avoids
+comparing a box to itself.)
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+SELECT
+  a.box_id AS box_a,
+  b.box_id AS box_b,
+  ROUND(ABS(a.latitude - b.latitude) + ABS(a.longitude - b.longitude), 4) AS distance
+FROM nest_boxes a
+JOIN nest_boxes b ON a.box_id < b.box_id
+ORDER BY distance ASC
+LIMIT 5;
+
+Closest pair: boxes 1 and 2, distance 0.006 (only 2x the 0.003 threshold).
+-->
+
+Once you have that result, answer: is the `0.003` threshold safely
+smaller than the distance between the closest two boxes, or is it cutting
+it close? What would happen to a GPS fix that happened to fall roughly
+halfway between those two closest boxes, and why might that be a problem
+for this specific pair, even if it's not a problem for most other box
+pairs in the dataset?
+
+### Query 2: Are some GPS tracker models more prone to being lost?
+
+Just like "at the nest," "lost" isn't a column anywhere in this database.
+A tracker is inferred to be lost when its deployment has no
+`retrieved_date`, meaning it was never brought back in.
+
+```{r, eval=FALSE}
+dbGetQuery(con, "
+  SELECT
+    t.tracker_model,
+    COUNT(*) AS n_deployments,
+    SUM(CASE WHEN d.retrieved_date IS NULL THEN 1 ELSE 0 END) AS n_lost,
+    ROUND(100.0 * SUM(CASE WHEN d.retrieved_date IS NULL THEN 1 ELSE 0 END)
+          / COUNT(*), 1) AS pct_lost
+  FROM deployments d
+  JOIN trackers t ON d.tracker_id = t.tracker_id
+  GROUP BY t.tracker_model
+  ORDER BY pct_lost DESC;
+")
+```
+
+**Question:** Which tracker model has the highest loss rate? Given this
+result, what would you recommend to the research team about which
+tracker model to use going forward, and what else would you want to know
+before making that call (e.g., cost, weight, battery life)?
+
+**Question:** This query has one specific detail that's easy to overlook
+but important for getting a correct result: the `100.0` (written as
+`100.0`, not just `100`) in the `ROUND(100.0 * SUM(...) / COUNT(*), 1)`
+line.
+
+Which single line in the query is this, and what job is it doing? (Hint:
+think about how SQLite handles division when both numbers involved are
+whole numbers, versus when one of them has a decimal point.)
+
+Try it yourself: change `100.0` to plain `100` in your query, rerun it,
+and compare the `pct_lost` column to your original result. What changes,
+and why? Which tracker model's row shows the clearest difference between
+the two versions, and what does that tell you about when this kind of
+mistake would be most likely to go unnoticed?
+
+### Query 3: Does hatchling growth differ by habitat type?
+
+This compares hatchling mass around day 15 of life (just before
+fledging) across the three habitat types nest boxes are placed in.
+
+```{r, eval=FALSE}
+dbGetQuery(con, "
+  SELECT
+    nb.location_type,
+    ROUND(AVG(m.mass_g), 1) AS avg_mass_g,
+    COUNT(*) AS n_records
+  FROM morphometrics m
+  JOIN birds b ON m.bird_id = b.bird_id
+  JOIN nests n ON b.natal_nest_id = n.nest_id
+  JOIN nest_boxes nb ON n.box_id = nb.box_id
+  WHERE b.entry_stage = 'hatchling'
+    AND julianday(m.measurement_date) - julianday(n.hatch_date) BETWEEN 13 AND 17
+  GROUP BY nb.location_type
+  ORDER BY avg_mass_g DESC;
+")
+```
+
+**Question:** How much difference is there between habitat types? Given
+the `n_records` column, do you think this dataset has enough
+observations to draw a confident conclusion either way?
+
+**Question:** This query needs to figure out how old each hatchling was,
+in days, at the time of each measurement, using two date columns:
+`m.measurement_date` and `n.hatch_date`. Which line does this, and what
+does the `julianday()` function do?
+
+Try running just this piece on its own to see what it returns:
+
+```{r, eval=FALSE}
+dbGetQuery(con, "
+  SELECT measurement_date, julianday(measurement_date)
+  FROM morphometrics
+  LIMIT 5;
+")
+```
+
+Dates in this database are stored as plain text (e.g., `'2023-05-03'`),
+not as a special date type. Why can't you just subtract two date strings
+directly, the way you might subtract two numbers? What would
+`'2023-05-20' - '2023-05-03'` even mean to SQLite, and why does wrapping
+each one in `julianday()` first solve that problem?
+
+One more thing to notice: the query also has a `WHERE b.entry_stage =
+'hatchling'` line. Given that the `JOIN` to `nests` uses
+`b.natal_nest_id = n.nest_id`, and only hatchlings have a non-`NULL`
+`natal_nest_id` (adults don't), is that `WHERE` line actually doing
+anything here, or is it redundant? Explain your reasoning.
+
+### Query 4: Does parent stress hormone level differ by habitat type?
+
+Corticosterone is the primary stress hormone in birds, and the researchers 
+hypothesize that bird parents in urban environments would show higher stress
+levels than bird parents in forests.
+
+```{r, eval=FALSE}
+dbGetQuery(con, "
+  SELECT
+    nb.location_type,
+    ROUND(AVG(h.corticosterone), 2) AS avg_cort,
+    COUNT(*) AS n_samples
+  FROM hormones h
+  JOIN birds b ON h.bird_id = b.bird_id
+  JOIN nests n ON b.bird_id IN (n.female_id, n.male_id)
+  JOIN nest_boxes nb ON n.box_id = nb.box_id
+  GROUP BY nb.location_type
+  ORDER BY avg_cort DESC;
+")
+```
+
+**Question:** Which habitat type shows the highest average
+corticosterone? Propose one biological explanation for why that habitat
+might be more stressful for a nesting bird. Given the sample sizes shown,
+how confident are you in this pattern?
+
+**Question:** Look at the `JOIN` line connecting `birds` to `nests`:
+
+```
+JOIN nests n ON b.bird_id IN (n.female_id, n.male_id)
+```
+
+This looks a little different from the joins we've used so far, it uses `IN` instead of a plain `=`. Why can't this line just say `ON b.bird_id = n.female_id`? What would that simpler version miss, and why does `IN (n.female_id, n.male_id)` fix it?
+
+### Query 5: Does gut microbiome richness differ between adults and hatchlings?
+
+This counts the number of distinct OTUs (a proxy for microbial diversity)
+detected per bird, then compares the average across adults and
+hatchlings.
+
+```{r, eval=FALSE}
+dbGetQuery(con, "
+  SELECT
+    b.entry_stage,
+    ROUND(AVG(otu_count), 1) AS avg_otus_per_bird
+  FROM (
+    SELECT bird_id, COUNT(DISTINCT otu_id) AS otu_count
+    FROM otu_reads
+    GROUP BY bird_id
+  ) sub
+  JOIN birds b ON sub.bird_id = b.bird_id
+  GROUP BY b.entry_stage;
+")
+```
+
+**Question:** This query uses a subquery, a query nested inside another
+query (the inner `SELECT` runs first, and the outer query treats its
+result like a table). In your own words, explain what the inner subquery
+computes, and why it needs to run before the outer `GROUP BY` can work.
+Then interpret the result: do adults or hatchlings show higher microbial
+richness, and can you think of a biological reason that might be true?
+
+**Question:** Look at the inner subquery:
+
+```
+SELECT bird_id, COUNT(DISTINCT otu_id) AS otu_count
+FROM otu_reads
+GROUP BY bird_id
+```
+
+Try removing `GROUP BY bird_id` from just this inner piece, and run the whole query again. What happens to the result? Why does dropping this one line break the entire comparison between adults and hatchlings, even though the outer query still has its own `GROUP BY b.entry_stage` line? What is `GROUP BY bird_id` actually accomplishing here that the outer `GROUP BY` can't do on its own?
+
+### What to submit
+
+Submit an RMarkdown document (or plain R script) with all five queries,
+their output, and your written answer to each question.
