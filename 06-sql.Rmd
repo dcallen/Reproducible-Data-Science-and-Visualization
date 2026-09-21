@@ -51,6 +51,31 @@ tables connect. Most relationships shown are one to many, except for the
 diet sample to ASV relationship, which is many to many, handled through
 the diet_asv_reads junction table.
 
+Before going further, a quick note on what an ASV actually is. An
+**Amplicon Sequence Variant (ASV)** is a unique DNA sequence recovered
+from a metabarcoding sample, essentially, a distinct genetic "fingerprint"
+that molecular methods can detect and compare, without necessarily knowing
+in advance which species it belongs to. When a diet sample is run through
+sequencing, the lab doesn't get a list of species names directly, it gets
+a list of ASVs (DNA sequences) detected in that sample, each with a
+"read count" reflecting how many times that particular sequence turned
+up. Those ASVs are then compared against reference genetic databases to
+assign a taxonomic identification, which is sometimes precise (down to
+species) and sometimes only resolves to a broader level (family or
+order), depending on how well-represented that organism is in existing
+genetic reference libraries. This is exactly the structure of our
+`diet_asvs` and `diet_asv_reads` tables from Chapter 5.
+
+## Getting the practice database
+
+Before we can query anything, you need a local copy of the course repository, since that's where `frogs.sqlite` lives. If you haven't already cloned it, revisit Chapter 3 for a full walkthrough of `git clone`. As a quick reminder, from your terminal:
+
+```
+git clone https://github.com/dcallen/Reproducible-Data-Science-and-Visualization.git
+```
+
+This creates a folder containing the entire course repository, including the `data/` folder where `frogs.sqlite` lives. If you already have the repo cloned from earlier chapters, just make sure it's up to date by running `git pull` from inside that folder.
+
 ## Setting your working directory in R
 
 Throughout this chapter, we'll connect to the database using a relative
@@ -127,6 +152,20 @@ Keep this connection open for the rest of the chapter, every example
 below assumes `con` already exists. When you're done working with a
 database, it's good practice to close the connection with
 `dbDisconnect(con)`.
+
+## Annotating your code
+
+Before we start writing real queries, it's worth pausing on a habit you should build from the very start: leaving comments in your code. In R, anything following a `#` on a line is a comment, R ignores it completely when running your code. Comments don't change what your code does; they explain *why* it does it, for the benefit of anyone reading it later (including future you).
+
+```{r, eval=FALSE}
+# Connect to the practice database
+con <- dbConnect(RSQLite::SQLite(), "data/frogs.sqlite")
+
+# List every table in the database, just to confirm the connection worked
+dbListTables(con)
+```
+
+A good rule of thumb: comment on *why* you're doing something, not just *what* the code does (the code itself already shows what it does). As queries get more complex later in this chapter, a short comment above each one explaining its purpose will make your scripts far easier to follow, both for you and for anyone you share them with.
 
 ## Writing SQL queries
 
@@ -347,6 +386,17 @@ is the **right** table. A **left join** keeps every row from the left
 table, filling in matching information from the right table wherever it
 exists, and leaving it blank (`NULL`) where it doesn't. An **inner join**
 keeps only rows that have a match in both tables.
+
+The four main join types differ in which rows they keep from each table. The diagram below shows this visually: the shaded region is what ends up in your result.
+
+![Venn diagrams illustrating inner, left, right, and full joins.](img/join-venn-diagrams.png)
+
+- **Inner join**: keeps only rows with a match in both tables (the overlap).
+- **Left join**: keeps every row from the left table, matched with the right table wherever possible.
+- **Right join**: keeps every row from the right table, matched with the left table wherever possible.
+- **Full join**: keeps every row from both tables, matched wherever possible.
+
+For this course, we'll mostly use left joins, since it's the most common case: keeping every row from your main table of interest (like `frogs`), while pulling in matching details from a related table wherever they exist. A quick note on SQLite specifically: `RIGHT JOIN` and `FULL JOIN` were only added in SQLite version 3.39 (2022), so depending on your installed version, those two might not work, `LEFT JOIN` and `INNER JOIN` (or just `JOIN`, which means the same thing as `INNER JOIN`) are supported everywhere and cover the vast majority of what you'll need.
 
 Not every frog was fitted with a GPS tag. If we left join `frogs` to
 `deployments`, we get every frog, with deployment information filled in
