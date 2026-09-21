@@ -288,47 +288,6 @@ relational database. Understanding how they work, though, will help you
 recognize when a future project does need one, and will make you a more
 careful designer of ordinary spreadsheets in the meantime.
 
-## A first look at our practice database
-
-In the next chapter, we'll dive into SQL, the standard language for
-working with relational databases, and learn to write queries that
-retrieve and manipulate data, as well as build a database from scratch.
-The practice database we'll use throughout that chapter (and beyond)
-extends our running frog example into a full relational system.
-
-![Entity relationship diagram of the frog practice database, showing ten tables and how they connect through primary and foreign keys.](img/frog-database-schema.png)
-
-It's made up of 10 tables:
-
-- **frogs**: one row per individual, storing static information (sex,
-  first capture date, mortality date if known)
-- **capture_sites**: one row per site, storing its name and coordinates
-- **captures**: one row per capture event, linking a frog to the site and
-  date it was captured
-- **morphometrics**: one row per biometric measurement, linked to the frog
-  it was taken from
-- **diet_asvs**: one row per unique Amplicon Sequence Variant detected
-  across the whole study, with its DNA sequence and taxonomic
-  identification
-- **diet_asv_reads**: one row per ASV detected within a given diet sample,
-  with a read count (the junction table for the many to many relationship
-  between diet samples and ASVs, discussed above)
-- **tags**: one row per GPS tag deployed in the project
-- **deployments**: one row per tag on frog deployment period, linking a
-  specific frog to a specific tag over a date range
-- **raw_gps_data**: one row per raw telemetry reading, as it came off the
-  tag, linked to the tag that recorded it
-- **processed_gps_data**: one row per cleaned, processed location, linked
-  back to the frog it belongs to
-
-Primary keys are unique identifiers within each table (frog ID, site ID,
-tag ID, and so on). Foreign keys are the shared columns that connect
-tables together (a frog ID appearing in the captures table, a tag ID
-appearing in the deployments table). The diagram above shows how all ten
-tables connect. Most relationships shown are one to many, except for the
-diet sample to ASV relationship, which is many to many, handled through
-the diet_asv_reads junction table.
-
 ## References
 
 - Codd, E. F. "A relational model of data for large shared data banks."
