@@ -151,6 +151,43 @@ relationship. You just need to recognize when a junction table is
 required, rather than trying to force the relationship directly into one
 of the two related tables.
 
+### A more realistic version: DNA metabarcoding diet data
+
+The food item example above is simplified. It assumes someone looked in a
+frog's stomach and identified prey items by eye. In practice, diet studies
+increasingly rely on DNA metabarcoding: a fecal or stomach sample is run
+through genetic sequencing, which returns a list of Amplicon Sequence
+Variants, or ASVs, detected in that sample, each one representing a
+distinct organism whose DNA turned up. This gives us a real world many to
+many relationship with a bit more structure to it.
+
+We need two tables to represent this properly. First, a table of every
+unique ASV detected anywhere in the study, along with its taxonomic
+identification:
+
+| asv_id | dna_sequence | taxon |
+|---------|----------------|--------|
+| 1       | ACGTACGT...    | Chironomidae |
+| 2       | TTGACGTA...    | Formicidae |
+
+Second, a table recording which ASVs turned up in which diet samples, and
+how many sequencing reads supported that detection:
+
+| read_id | diet_sample_id | frog_id | asv_id | read_count |
+|----------|-------------------|----------|----------|--------------|
+| 1        | 101               | 3        | 1        | 3271         |
+| 2        | 101               | 3        | 2        | 448          |
+| 3        | 102               | 7        | 1        | 787          |
+
+This second table is the junction table: one diet sample can contain many
+ASVs, and one ASV (say, Chironomidae) can show up across many different
+frogs' samples. Neither side is the "one" in the relationship, exactly the
+many to many pattern described above. The read_count column is a good
+example of something that belongs on the junction table itself, rather
+than on either of the two tables it connects: it's a property of the
+relationship (how many reads supported this particular ASV, in this
+particular sample), not a property of the ASV alone, or the frog alone.
+
 ## Database design and architecture
 
 A database's structure should mirror the real-world structure of the
@@ -246,9 +283,9 @@ retrieve and manipulate data, as well as build a database from scratch.
 The practice database we'll use throughout that chapter (and beyond)
 extends our running frog example into a full relational system.
 
-![Diagram of the frog  database, showing nine tables and how they connect through primary and foreign keys (PK and FK, respectively).](img/frog-database-schema.png)
+![Entity relationship diagram of the frog practice database, showing eleven tables and how they connect through primary and foreign keys.](img/frog-database-schema.png)
 
-It's made up of 9 tables:
+It's made up of 11 tables:
 
 - **frogs**: one row per individual, storing static information (sex,
   first capture date, mortality date if known)
@@ -260,6 +297,11 @@ It's made up of 9 tables:
 - **diet**: one row per food item found in a diet sample, linked to both
   the sample and the frog (this is the junction table for the many to many
   relationship between frogs and food items, discussed above)
+- **asvs**: one row per unique Amplicon Sequence Variant detected across
+  the whole study, with its DNA sequence and taxonomic identification
+- **asv_reads**: one row per ASV detected within a given diet sample, with
+  a read count (the junction table for the many to many relationship
+  between diet samples and ASVs, discussed above)
 - **tags**: one row per GPS tag deployed in the project
 - **deployments**: one row per tag on frog deployment period, linking a
   specific frog to a specific tag over a date range
@@ -271,10 +313,11 @@ It's made up of 9 tables:
 Primary keys are unique identifiers within each table (frog ID, site ID,
 tag ID, and so on). Foreign keys are the shared columns that connect
 tables together (a frog ID appearing in the captures table, a tag ID
-appearing in the deployments table). The diagram above shows how all nine
-tables connect, and every relationship shown is one to many, except for
-the frogs to diet relationship, which is many to many via the diet
-junction table.
+appearing in the deployments table). The diagram above shows how all
+eleven tables connect. Most relationships shown are one to many, except
+for the frogs to diet relationship and the diet sample to ASV
+relationship, both of which are many to many, handled through their
+respective junction tables.
 
 ## References
 
