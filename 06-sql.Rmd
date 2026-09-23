@@ -510,16 +510,80 @@ the SQL string.
    (Hint: think about which frog IDs appear in `frogs` but never appear in
    `diet_asv_reads`. You may find a `LEFT JOIN` combined with `WHERE ...
    IS NULL` useful here.)
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+SELECT frogs.frog_id
+FROM frogs
+LEFT JOIN diet_asv_reads
+ON frogs.frog_id = diet_asv_reads.frog_id
+WHERE diet_asv_reads.frog_id IS NULL;
+
+Result: 5 frogs (IDs 8, 10, 14, 19, 32).
+-->
+
 2. **What is the average weight of male frogs versus female frogs?** (Hint:
    you'll need to join `frogs` to `morphometrics`, then group by sex.)
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+SELECT frogs.sex, AVG(morphometrics.weight_g) AS avg_weight
+FROM frogs
+JOIN morphometrics ON frogs.frog_id = morphometrics.frog_id
+GROUP BY frogs.sex;
+
+Result: female ~17.25 g, male ~16.65 g.
+-->
+
 3. **Which tag model has been deployed the most times?** (Hint: join
    `deployments` to `tags`.)
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+SELECT tags.tag_model, COUNT(*) AS n_deployments
+FROM deployments
+JOIN tags ON deployments.tag_id = tags.tag_id
+GROUP BY tags.tag_model
+ORDER BY n_deployments DESC;
+
+Result: e-obs 2g (6 deployments), ahead of ATS G5 (3) and Lotek PinPoint 75 (1).
+-->
+
 4. **List every frog that has tested positive for Chironomidae in its
    diet** (i.e., appears in `diet_asv_reads` linked to a `diet_asvs` row
    where `family = 'Chironomidae'`).
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+SELECT DISTINCT diet_asv_reads.frog_id
+FROM diet_asv_reads
+JOIN diet_asvs ON diet_asv_reads.asv_id = diet_asvs.asv_id
+WHERE diet_asvs.family = 'Chironomidae';
+
+Result: 13 frogs (IDs 2, 5, 9, 11, 25, 27, 28, 31, 34, 35, 36, 38, 40).
+-->
+
 5. **Which capture site has the highest average frog weight, among frogs
    caught there?** (Hint: this requires joining three tables: `captures`,
    `capture_sites`, and `morphometrics`.)
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+SELECT capture_sites.site_name, AVG(morphometrics.weight_g) AS avg_weight
+FROM captures
+JOIN capture_sites ON captures.site_id = capture_sites.site_id
+JOIN morphometrics ON captures.frog_id = morphometrics.frog_id
+GROUP BY capture_sites.site_name
+ORDER BY avg_weight DESC;
+
+Result: Cattail Marsh highest (~17.40 g), then Beaver Creek (~16.95 g),
+then Alder Pond (~16.91 g) — differences are fairly small.
+-->
 
 ### What to submit
 
