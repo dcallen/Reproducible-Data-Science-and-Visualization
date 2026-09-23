@@ -1,0 +1,460 @@
+# Building a Database in R with RSQLite
+
+In Chapter 6, we queried a database that already existed, someone else
+had already built `frogs.sqlite` and populated it with data. This chapter
+covers the other half of the picture: building a database from scratch,
+starting from nothing but a set of CSV files, entirely from R.
+
+This matters for your own final project. If your project ever grows
+complex enough to warrant a relational database (see the "when not to
+use a relational database" section in Chapter 5), you'll be the one
+building it, and you'll almost certainly be starting from raw data files,
+not an existing database.
+
+We'll rebuild a small piece of the `frogs.sqlite` database ourselves,
+from five CSV files: `frogs.csv`, `capture_sites.csv`, `tags.csv`,
+`deployments.csv`, and `raw_gps_data.csv`. You can find these in the
+`data/` folder of the course repository.
+
+## Two functions, two purposes
+
+So far, every query we've written has used `dbGetQuery()`, which
+*retrieves* data and returns it as a data frame. Building a database
+requires a second function, `dbExecute()`, for actions that *change* the
+database itself, creating tables, inserting rows, deleting things. Both
+functions take the same two arguments (a connection, and a SQL string),
+they just serve different purposes: `dbGetQuery()` when you want data
+back, `dbExecute()` when you want to make something happen.
+
+## Creating a new, empty database
+
+`dbConnect()` doesn't require a database to already exist. If the file
+path you give it doesn't exist yet, it creates a brand new, empty
+database there instead.
+
+```{r, eval=FALSE}
+library(DBI)
+
+con <- dbConnect(RSQLite::SQLite(), "data/my_frogs.sqlite")
+```
+
+## Creating tables
+
+We create each table with a `CREATE TABLE` statement, run through
+`dbExecute()`, exactly the same SQL syntax you'd use directly in SQLite,
+just wrapped in R.
+
+```{r, eval=FALSE}
+dbExecute(con, "CREATE TABLE frogs (
+  frog_id INTEGER PRIMARY KEY,
+  sex TEXT,
+  first_capture_date TEXT,
+  mortality_date TEXT
+);")
+```
+
+## Loading a CSV and writing it to a table
+
+Once a table exists, we read the corresponding CSV into R as an ordinary
+data frame, then use `dbWriteTable()` to insert it. `dbWriteTable()`
+takes the connection, the name of the table (as a string), and the data
+frame to insert. Critically, we set `append = TRUE`, without it,
+`dbWriteTable()` would overwrite the table entirely, along with the
+`PRIMARY KEY` constraint we just defined.
+
+```{r, eval=FALSE}
+frogs <- read.csv("data/frogs.csv", stringsAsFactors = FALSE)
+names(frogs)
+```
+
+Take a look at the column names before writing anything. This is a step
+worth never skipping: `dbWriteTable()` matches CSV columns to table
+columns by name, not by position, so if a name doesn't match exactly,
+that column won't be recognized.
+
+**Try it now:** Check whether `frogs.csv`'s column names match the
+`frogs` table we just created.
+
+```{r, eval=FALSE}
+names(frogs)
+```
+
+You'll notice the first column is called `frog`, not `frog_id`, a
+mismatch. Fix it before writing:
+
+```{r, eval=FALSE}
+names(frogs)[1] <- "frog_id"
+dbWriteTable(con, "frogs", frogs, append = TRUE)
+dbGetQuery(con, "SELECT * FROM frogs LIMIT 5;")
+```
+
+## Matching both names and order
+
+Sometimes a CSV's columns are named correctly but in the wrong order,
+which causes the same kind of mismatch. Let's create the
+`capture_sites` table and look at its CSV.
+
+```{r, eval=FALSE}
+dbExecute(con, "CREATE TABLE capture_sites (
+  site_id INTEGER PRIMARY KEY,
+  site_name TEXT,
+  latitude REAL,
+  longitude REAL
+);")
+
+capture_sites <- read.csv("data/capture_sites.csv", stringsAsFactors = FALSE)
+names(capture_sites)
+```
+
+**Try it now:** Compare that column order to the table definition above.
+Both the names *and* the order need to line up before writing. Reorder
+and rename as needed, then write:
+
+```{r, eval=FALSE}
+capture_sites <- capture_sites[, c("site", "site_name", "latitude", "longitude")]
+names(capture_sites)[1] <- "site_id"
+dbWriteTable(con, "capture_sites", capture_sites, append = TRUE)
+dbGetQuery(con, "SELECT * FROM capture_sites;")
+```
+
+Repeat the same process for `tags`:
+
+```{r, eval=FALSE}
+dbExecute(con, "CREATE TABLE tags (
+  tag_id INTEGER PRIMARY KEY,
+  tag_model TEXT
+);")
+
+tags <- read.csv("data/tags.csv", stringsAsFactors = FALSE)
+names(tags)
+```
+
+**Try it now:** `tags.csv` has columns named `tag` and `model`, neither
+matches the table definition. Rename both, then write:
+
+```{r, eval=FALSE}
+names(tags) <- c("tag_id", "tag_model")
+dbWriteTable(con, "tags", tags, append = TRUE)
+dbGetQuery(con, "SELECT * FROM tags LIMIT 5;")
+```
+
+## Autoincrementing a primary key from R
+
+Some tables don't have a natural, ready-made primary key in their CSV,
+`deployments.csv`, for example, has no `deployment_id` column at all.
+Rather than relying on SQL's `AUTOINCREMENT` keyword, we can just
+generate a serial number ourselves, directly in R, before writing:
+
+```{r, eval=FALSE}
+dbExecute(con, "CREATE TABLE deployments (
+  deployment_id INTEGER PRIMARY KEY,
+  frog_id INTEGER,
+  tag_id INTEGER,
+  deployed_date TEXT,
+  retrieved_date TEXT,
+  FOREIGN KEY (frog_id) REFERENCES frogs(frog_id),
+  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);")
+
+deployments <- read.csv("data/deployments.csv", stringsAsFactors = FALSE)
+names(deployments)
+
+# no deployment_id column exists yet -- create one
+deployments$deployment_id <- 1:nrow(deployments)
+
+# put it first, to match the table's column order
+deployments <- deployments[, c("deployment_id", "frog_id", "tag_id",
+                                "deployed_date", "retrieved_date")]
+
+dbWriteTable(con, "deployments", deployments, append = TRUE)
+dbGetQuery(con, "SELECT * FROM deployments LIMIT 5;")
+```
+
+**Try it now:** Load and write `raw_gps_data.csv` the same way, combining
+everything so far: check the column names, rename and reorder as needed,
+add a serial `reading_id`, then write.
+
+```{r, eval=FALSE}
+dbExecute(con, "CREATE TABLE raw_gps_data (
+  reading_id INTEGER PRIMARY KEY,
+  tag_id INTEGER,
+  timestamp TEXT,
+  raw_lat REAL,
+  raw_lon REAL,
+  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);")
+
+raw_gps_data <- read.csv("data/raw_gps_data.csv", stringsAsFactors = FALSE)
+names(raw_gps_data)
+
+raw_gps_data$reading_id <- 1:nrow(raw_gps_data)
+raw_gps_data <- raw_gps_data[, c("reading_id", "tag", "timestamp", "lat", "lon")]
+names(raw_gps_data) <- c("reading_id", "tag_id", "timestamp", "raw_lat", "raw_lon")
+
+dbWriteTable(con, "raw_gps_data", raw_gps_data, append = TRUE)
+dbGetQuery(con, "SELECT * FROM raw_gps_data LIMIT 5;")
+```
+
+## Deriving a new table from existing ones
+
+This is where building a database in R really pays off. So far, every
+table has come directly from a CSV. But `raw_gps_data` on its own isn't
+very useful, it tells us which *tag* recorded each GPS fix, but not which
+*frog* was wearing that tag at the time (a single tag can be reused
+across multiple frogs and deployments over the course of a study).
+
+We can derive a new table, `processed_gps_data`, by matching each raw GPS
+reading to the deployment that was active at that exact moment, based on
+matching `tag_id` and falling within that deployment's date range. This
+uses `INSERT INTO ... SELECT`: instead of inserting values we type out
+ourselves, we insert the *result of a query*.
+
+```{r, eval=FALSE}
+dbExecute(con, "CREATE TABLE processed_gps_data (
+  location_id INTEGER PRIMARY KEY,
+  frog_id INTEGER,
+  timestamp TEXT,
+  lat REAL,
+  lon REAL,
+  FOREIGN KEY (frog_id) REFERENCES frogs(frog_id)
+);")
+
+dbExecute(con, "
+  INSERT INTO processed_gps_data (frog_id, timestamp, lat, lon)
+  SELECT
+    deployments.frog_id,
+    raw_gps_data.timestamp,
+    raw_gps_data.raw_lat,
+    raw_gps_data.raw_lon
+  FROM deployments
+  LEFT JOIN raw_gps_data USING (tag_id)
+  WHERE raw_gps_data.tag_id = deployments.tag_id
+  AND (
+    (
+      (strftime(raw_gps_data.timestamp) >= strftime(deployments.deployed_date)) AND
+      (strftime(raw_gps_data.timestamp) <= strftime(deployments.retrieved_date))
+    )
+    OR
+    (
+      (raw_gps_data.timestamp >= deployments.deployed_date) AND
+      (deployments.retrieved_date IS NULL)
+    )
+  );
+")
+
+dbGetQuery(con, "SELECT * FROM processed_gps_data LIMIT 10;")
+```
+
+A few things worth unpacking in that `WHERE` clause:
+
+- The first branch (inside the first pair of parentheses) handles the
+  normal case: a deployment with both a start and an end date, where the
+  GPS reading's timestamp needs to fall between the two.
+- The second branch, after `OR`, handles a deployment whose
+  `retrieved_date` is `NULL`, a tracker that was lost and never retrieved
+  (recall Chapter 6's frog database, or your own bird database
+  assignment, both have this same pattern). Without this second branch,
+  every reading from a lost tracker's deployment window would be silently
+  excluded, since comparing anything to `NULL` in SQL is never `TRUE`.
+
+**Try it now:** Confirm every raw reading found a home. Since every
+reading in this dataset happens to fall inside exactly one deployment
+window, the two counts below should match:
+
+```{r, eval=FALSE}
+dbGetQuery(con, "SELECT COUNT(*) AS n FROM raw_gps_data;")
+dbGetQuery(con, "SELECT COUNT(*) AS n FROM processed_gps_data;")
+```
+
+When you're done working with a database, close the connection:
+
+```{r, eval=FALSE}
+dbDisconnect(con)
+```
+
+## In-Class Activity: Building a Mini Database from Scratch
+
+For this activity, you'll repeat the entire workflow from this chapter on
+your own, from an empty database to a derived table, without following
+along step by step.
+
+### Setup
+
+```{r, eval=FALSE}
+library(DBI)
+
+con <- dbConnect(RSQLite::SQLite(), "data/practice_frogs.sqlite")
+```
+
+### Your turn
+
+1. **Create and populate the `frogs` table**, using `data/frogs.csv`.
+   Remember to check the column names before writing.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbExecute(con, "CREATE TABLE frogs (
+  frog_id INTEGER PRIMARY KEY,
+  sex TEXT,
+  first_capture_date TEXT,
+  mortality_date TEXT
+);")
+
+frogs <- read.csv("data/frogs.csv", stringsAsFactors = FALSE)
+names(frogs)
+names(frogs)[1] <- "frog_id"
+dbWriteTable(con, "frogs", frogs, append = TRUE)
+-->
+
+2. **Create and populate the `capture_sites` table**, using
+   `data/capture_sites.csv`. Remember to check both names and column
+   order.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbExecute(con, "CREATE TABLE capture_sites (
+  site_id INTEGER PRIMARY KEY,
+  site_name TEXT,
+  latitude REAL,
+  longitude REAL
+);")
+
+capture_sites <- read.csv("data/capture_sites.csv", stringsAsFactors = FALSE)
+names(capture_sites)
+capture_sites <- capture_sites[, c("site", "site_name", "latitude", "longitude")]
+names(capture_sites)[1] <- "site_id"
+dbWriteTable(con, "capture_sites", capture_sites, append = TRUE)
+-->
+
+3. **Create and populate the `tags` table**, using `data/tags.csv`.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbExecute(con, "CREATE TABLE tags (
+  tag_id INTEGER PRIMARY KEY,
+  tag_model TEXT
+);")
+
+tags <- read.csv("data/tags.csv", stringsAsFactors = FALSE)
+names(tags)
+names(tags) <- c("tag_id", "tag_model")
+dbWriteTable(con, "tags", tags, append = TRUE)
+-->
+
+4. **Create and populate the `deployments` table**, using
+   `data/deployments.csv`. This table has no ready-made primary key in
+   the CSV, you'll need to generate one in R.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbExecute(con, "CREATE TABLE deployments (
+  deployment_id INTEGER PRIMARY KEY,
+  frog_id INTEGER,
+  tag_id INTEGER,
+  deployed_date TEXT,
+  retrieved_date TEXT,
+  FOREIGN KEY (frog_id) REFERENCES frogs(frog_id),
+  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);")
+
+deployments <- read.csv("data/deployments.csv", stringsAsFactors = FALSE)
+names(deployments)
+deployments$deployment_id <- 1:nrow(deployments)
+deployments <- deployments[, c("deployment_id", "frog_id", "tag_id",
+                                "deployed_date", "retrieved_date")]
+dbWriteTable(con, "deployments", deployments, append = TRUE)
+-->
+
+5. **Create and populate the `raw_gps_data` table**, using
+   `data/raw_gps_data.csv`. Same as above: no ready-made primary key.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbExecute(con, "CREATE TABLE raw_gps_data (
+  reading_id INTEGER PRIMARY KEY,
+  tag_id INTEGER,
+  timestamp TEXT,
+  raw_lat REAL,
+  raw_lon REAL,
+  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
+);")
+
+raw_gps_data <- read.csv("data/raw_gps_data.csv", stringsAsFactors = FALSE)
+names(raw_gps_data)
+raw_gps_data$reading_id <- 1:nrow(raw_gps_data)
+raw_gps_data <- raw_gps_data[, c("reading_id", "tag", "timestamp", "lat", "lon")]
+names(raw_gps_data) <- c("reading_id", "tag_id", "timestamp", "raw_lat", "raw_lon")
+dbWriteTable(con, "raw_gps_data", raw_gps_data, append = TRUE)
+-->
+
+6. **Derive `processed_gps_data`** from `deployments` and
+   `raw_gps_data`, matching each raw reading to the frog whose deployment
+   was active at that time. You're welcome to adapt the `INSERT INTO ...
+   SELECT` statement from this chapter rather than writing it entirely
+   from scratch, the point of this step is understanding *why* it works,
+   not memorizing SQL syntax.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbExecute(con, "CREATE TABLE processed_gps_data (
+  location_id INTEGER PRIMARY KEY,
+  frog_id INTEGER,
+  timestamp TEXT,
+  lat REAL,
+  lon REAL,
+  FOREIGN KEY (frog_id) REFERENCES frogs(frog_id)
+);")
+
+dbExecute(con, "
+  INSERT INTO processed_gps_data (frog_id, timestamp, lat, lon)
+  SELECT
+    deployments.frog_id,
+    raw_gps_data.timestamp,
+    raw_gps_data.raw_lat,
+    raw_gps_data.raw_lon
+  FROM deployments
+  LEFT JOIN raw_gps_data USING (tag_id)
+  WHERE raw_gps_data.tag_id = deployments.tag_id
+  AND (
+    (
+      (strftime(raw_gps_data.timestamp) >= strftime(deployments.deployed_date)) AND
+      (strftime(raw_gps_data.timestamp) <= strftime(deployments.retrieved_date))
+    )
+    OR
+    (
+      (raw_gps_data.timestamp >= deployments.deployed_date) AND
+      (deployments.retrieved_date IS NULL)
+    )
+  );
+")
+-->
+
+7. **Confirm your work**: query `processed_gps_data` and check that the
+   row count matches `raw_gps_data`.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+dbGetQuery(con, "SELECT COUNT(*) AS n FROM raw_gps_data;")
+dbGetQuery(con, "SELECT COUNT(*) AS n FROM processed_gps_data;")
+
+Both should return 160.
+-->
+
+### What to submit
+
+Submit an RMarkdown document (or plain R script) containing every
+`CREATE TABLE`, `dbWriteTable()`, and the final `INSERT INTO ... SELECT`
+statement you used, along with the output confirming your row counts
+match.
+
+## References
+
+- `DBI` package documentation: <https://dbi.r-dbi.org/>
+- `RSQLite` package documentation: <https://rsqlite.r-dbi.org/>
