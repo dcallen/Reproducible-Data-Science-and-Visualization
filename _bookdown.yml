@@ -9,6 +9,7 @@ rmd_files: [
   "04-tidy-data.Rmd",
   "05-relational-databases.Rmd",
   "06-sql.Rmd",
+  "07-rsqlite.Rmd",
   "assignments.Rmd"
 ]
 new_session: yes
