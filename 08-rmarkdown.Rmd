@@ -79,7 +79,7 @@ set off by three backticks and curly braces containing the language name.
 anywhere in the body:
 
 ````
-```{r}
+```{r, eval=FALSE}
 2 + 2
 ```
 ````
@@ -107,7 +107,7 @@ computes the average frog weight, this time with `echo=FALSE` so only the
 result shows, not the code itself:
 
 ````
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 library(DBI)
 con <- dbConnect(RSQLite::SQLite(), "data/frogs.sqlite")
 avg_weight <- dbGetQuery(con, "SELECT AVG(weight_g) AS avg_weight FROM morphometrics;")
