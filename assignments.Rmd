@@ -606,3 +606,92 @@ Try removing `GROUP BY bird_id` from just this inner piece, and run the whole qu
 
 Submit an RMarkdown document (or plain R script) with all five queries,
 their output, and your written answer to each question.
+
+## Week 6: Design Your Final Project Database Structure
+
+Now that you've worked through relational databases (Chapter 5), SQL
+(Chapter 6), and building a database from CSVs in R (Chapter 7), it's
+time to apply all of that to your own final project. This week, you'll
+design the table structure your project's data would actually need,
+without building the database itself yet.
+
+### What to do
+
+**1. Revisit your dataset.**
+
+Go back to your Week 1 proposal: your dataset, your rationale, and your
+exploratory questions. Keep these in mind as you design, since your
+table structure should support the questions you actually want to ask.
+
+**2. Decide how many tables you need.**
+
+Using the principles from Chapter 5, work through whether your data
+belongs in one table or several:
+
+- What is the sampling unit (or units) in your data? A single
+  consistent unit usually means a single table is enough. Multiple
+  distinct units (e.g., a site, and repeated visits to that site) often
+  means multiple tables.
+- Is there a mix of static information (recorded once) and dynamic
+  information (recorded repeatedly)? If so, consider splitting them,
+  the same logic behind separating a frog's sex from its repeated
+  weight measurements.
+- Does every column hold one atomic value? If you find yourself wanting
+  to cram a list into a single cell, that's usually a sign you need an
+  additional table (a junction table, if the relationship is many to
+  many, as in our diet_asvs / diet_asv_reads example).
+
+A single table is a completely acceptable answer here, if that's what
+your data actually calls for. What matters is that you can justify the
+decision using these principles, not that you force complexity your
+project doesn't need.
+
+**3. Map out each table.**
+
+For every table your design requires, write out:
+
+- The table name
+- Every column header, with its data type (text, integer, float, date,
+  boolean)
+- Which column is the primary key
+- Any foreign keys, and which table and column each one references
+
+**4. If you have more than one table, explain the relationships.**
+
+For each pair of related tables, state whether the relationship is one
+to many or many to many, and briefly explain why. If it's many to many,
+identify the junction table that handles it.
+
+**5. Draw a diagram.**
+
+Using PowerPoint, Google Slides, or a similar tool, draw a diagram of
+your table structure, following the same style as the diagrams in
+Chapters 5 through 7:
+
+- One box (or text box) per table, with the table name at the top.
+- List every column inside its box, and mark the primary key (e.g.,
+  underline it, or add "(PK)" next to it) and any foreign keys (add
+  "(FK)" next to them).
+- Draw a line or arrow connecting each pair of related tables, from the
+  primary key in one table to the matching foreign key in the other.
+- Label each connecting line as "1 to many" or "many to many," matching
+  the relationships you identified in step 4.
+
+If you have a single table, you don't need any connecting lines, just
+one box showing its columns.
+
+### What to submit
+
+Submit a short document (PDF, Word, or a rendered RMarkdown file)
+containing:
+
+1. Your diagram (a PowerPoint or Google Slides screenshot/export is
+   fine, it doesn't need to be a separate file).
+2. Your table map in writing: every table, its columns and data types,
+   its primary key, and any foreign keys (this can be redundant with
+   your diagram, that's fine, the written version should be
+   detailed enough to actually build the database from later).
+3. A short paragraph (3-5 sentences) explaining your reasoning: why this
+   many tables, and how they relate to each other (or, if you landed on
+   a single table, why that's the right call for your data).
+
