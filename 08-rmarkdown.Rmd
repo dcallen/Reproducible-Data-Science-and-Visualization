@@ -1,0 +1,233 @@
+# Dynamic Documents with RMarkdown
+
+Every chapter of this course textbook, every assignment you've submitted,
+and every chunk of R code you've run so far has lived inside an `.Rmd`
+file. This chapter finally explains what that file format actually is,
+and teaches you to write one of your own from scratch.
+
+## What is a dynamic document?
+
+A **dynamic document** is a file that combines code, the output of that
+code, and narrative writing, all in one place. You're reading one right
+now: this entire textbook is written in RMarkdown.
+
+In a dynamic document, code runs live, right inside the document, and
+produces "living" output (figures, tables, summary statistics) that
+updates automatically whenever the underlying code or data changes. This
+is a huge step up from the traditional alternative: running an analysis
+in one program, manually copying a figure into a Word document, then
+having to redo that copy-paste by hand every time the data changes or you
+spot a mistake. A dynamic document never goes out of sync with the code
+that produced it, because the two are never separated in the first place.
+
+## Markdown and RMarkdown
+
+Markdown is a lightweight system for formatting plain text, you've been
+reading and writing it throughout this course, every chapter of this
+book, every `README.md`, every assignment. RMarkdown is a variant of
+Markdown built specifically for R: it combines ordinary Markdown text
+with embedded, executable R code, and can export the result to many
+formats (HTML, PDF, Word documents, slide decks).
+
+The RMarkdown workflow happens in two stages, though you'll never
+interact with the intermediate step directly:
+
+1. **Knitting**: the `knitr` package runs every code chunk in your `.Rmd`
+   file, captures its output, and weaves the results back into a plain
+   Markdown (`.md`) file.
+2. **Rendering**: `pandoc` (the same tool underlying this entire course
+   textbook) converts that Markdown file into your chosen final format.
+
+Both steps happen automatically when you click "Knit" in RStudio, you
+don't need to run them separately.
+
+## Writing an RMarkdown document
+
+### Creating the document
+
+In RStudio, go to **File > New File > R Markdown...**. Give it a title
+and select HTML as the output format (the most common choice, and what
+we'll use throughout this chapter). RStudio will generate a starter
+document with some example content already in it, feel free to delete
+everything below the header and start fresh.
+
+### YAML headers
+
+Every RMarkdown document begins with a **YAML header**: a block between
+two lines of three dashes, specifying document-level metadata like the
+title, author, date, and output format.
+
+```
+---
+title: "Frog Morphometrics Summary"
+author: "Your Name"
+date: "2024-06-01"
+output: html_document
+---
+```
+
+You've actually seen this before, every chapter of this textbook (and the
+Overview page) has one of these at the top, since bookdown is built on
+top of the same RMarkdown system.
+
+### Code chunks
+
+A **code chunk** is a block of R code embedded directly in your document,
+set off by three backticks and curly braces containing the language name.
+
+**Try it now:** Create a new RMarkdown document, and add this chunk
+anywhere in the body:
+
+````
+```{r}
+2 + 2
+```
+````
+
+Knit the document. You should see both the code itself and its output
+(`4`) appear in your rendered document.
+
+Every code chunk can take **options**, placed inside the curly braces
+after the language name, that control how it behaves. A few you'll use
+constantly:
+
+- `echo=FALSE`: runs the code, but hides the code itself from the
+  rendered output (only the result shows).
+- `eval=FALSE`: shows the code, but doesn't run it (you've seen this
+  throughout this textbook, anywhere you weren't meant to run something
+  yet).
+- `include=FALSE`: runs the code, but hides both the code and its
+  output entirely (useful for setup steps, like loading packages, that a
+  reader doesn't need to see).
+- `fig.width` / `fig.height`: control the size of any plot the chunk
+  produces.
+
+**Try it now:** Add a second chunk that connects to the frog database and
+computes the average frog weight, this time with `echo=FALSE` so only the
+result shows, not the code itself:
+
+````
+```{r, echo=FALSE}
+library(DBI)
+con <- dbConnect(RSQLite::SQLite(), "data/frogs.sqlite")
+avg_weight <- dbGetQuery(con, "SELECT AVG(weight_g) AS avg_weight FROM morphometrics;")
+avg_weight
+```
+````
+
+Knit again. Notice the code itself doesn't appear this time, only the
+number.
+
+### Inline code
+
+Sometimes you want to weave a single computed value directly into a
+sentence, rather than displaying it as separate chunk output. **Inline
+code** does exactly this, using a single backtick, the letter `r`, your
+code, and a closing backtick, right in the middle of regular text.
+
+**Try it now:** Add this sentence to your document body (not inside a
+chunk):
+
+```
+The average frog weight in our dataset is `r round(avg_weight$avg_weight, 1)` grams.
+```
+
+(This assumes the `avg_weight` object from the previous chunk has
+already run earlier in the document, code chunks execute top to bottom,
+in order, just like a script.) Knit the document, and you should see the
+actual number appear seamlessly inside the sentence, no separate chunk,
+no manual copy-pasting.
+
+### Text formatting
+
+Everything outside of code chunks is plain Markdown, the same syntax
+we've used throughout this course: `**bold**`, `*italics*`, `# headers`,
+`- bullet lists`, and so on (see Chapter 2 if you need a refresher).
+
+### Embedding images
+
+To include an existing image file (a photo, a diagram, a logo), use
+standard Markdown image syntax:
+
+```
+![Alt text describing the image](path/to/image.png)
+```
+
+Note that this is different from a plot generated by a code chunk, any
+plot your R code produces (with `plot()`, `hist()`, and so on) gets
+embedded automatically, with no separate image syntax needed at all, it's
+just the natural output of the chunk that created it.
+
+### Adding a table of contents
+
+For longer documents, add a table of contents by adding `toc: true` to
+your YAML header, nested under the output format:
+
+```
+---
+title: "Frog Morphometrics Summary"
+output:
+  html_document:
+    toc: true
+---
+```
+
+### Knitting the document
+
+Click the **Knit** button at the top of the source pane (or run
+`rmarkdown::render("your-file.Rmd")` from the console) to produce your
+final output file. RStudio will show you a preview automatically, and
+save the rendered file (an `.html`, in our case) alongside your `.Rmd` in
+the same folder.
+
+## In-Class Activity: Building a Frog Data Summary Report
+
+For this activity, you'll build a short RMarkdown report from scratch,
+summarizing data from `frogs.sqlite`.
+
+### Setup
+
+1. In RStudio, create a new RMarkdown document (**File > New File > R
+   Markdown...**), title it "Frog Data Summary," and select HTML output.
+   Delete the example content RStudio generates, keeping only the YAML
+   header.
+
+2. Add `toc: true` to your YAML header, nested under `html_document`.
+
+### Your turn
+
+Build a report containing all of the following:
+
+1. **A setup chunk** near the top (using `include=FALSE`, since a reader
+   doesn't need to see this) that loads `DBI` and connects to
+   `data/frogs.sqlite`.
+
+2. **A section header** ("## Weight Summary"), followed by a chunk (with
+   `echo=FALSE`, since only the result matters here) that queries the
+   average, minimum, and maximum frog weight from the `morphometrics`
+   table, and stores the result in an object.
+
+3. **A sentence using inline code** that reports the average weight
+   computed in step 2, woven directly into a sentence (e.g., "Frogs in
+   this study weighed an average of *X* grams.").
+
+4. **A second section header** ("## Weight Distribution"), followed by a
+   chunk that pulls all weight values from `morphometrics` into R and
+   plots a histogram, using base R's `hist()` function:
+
+   ```{r, eval=FALSE}
+   weights <- dbGetQuery(con, "SELECT weight_g FROM morphometrics;")
+   hist(weights$weight_g, main = "Frog Weight Distribution", xlab = "Weight (g)")
+   ```
+
+5. **Knit your document** to HTML, and confirm the table of contents,
+   inline sentence, and histogram all appear correctly.
+
+### What to submit
+
+Submit both your `.Rmd` source file and the knitted `.html` output.
+
+## References
+
+- RMarkdown documentation: <https://rmarkdown.rstudio.com/>
+- `knitr` package documentation: <https://yihui.org/knitr/>

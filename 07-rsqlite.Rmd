@@ -272,180 +272,79 @@ When you're done working with a database, close the connection:
 dbDisconnect(con)
 ```
 
-## In-Class Activity: Building a Mini Database from Scratch
+## In-Class Activity: Building a Mini Bird Tracking Database
 
-For this activity, you'll repeat the entire workflow from this chapter on
-your own, from an empty database to a derived table, without following
-along step by step.
+For this activity, you'll repeat the workflow from this chapter on a new
+dataset: a small piece of the bird nest box database from Chapter 6's
+assignment, rather than the frog data used in the walkthrough above. The
+table names and column layouts are different, so this isn't a matter of
+repeating the same steps from memory, you'll need to actually look at
+each CSV and figure out what it needs.
+
+You'll build four tables (`birds`, `trackers`, `deployments`,
+`gps_fixes`) from four CSVs, then derive a fifth, `bird_locations`,
+matching each GPS fix to the bird that was wearing that tracker at the
+time.
 
 ### Setup
 
 ```{r, eval=FALSE}
 library(DBI)
 
-con <- dbConnect(RSQLite::SQLite(), "data/practice_frogs.sqlite")
+con <- dbConnect(RSQLite::SQLite(), "data/practice_birds.sqlite")
 ```
+
+### A note on missing values
+
+One thing this dataset has that the frog data in the walkthrough didn't:
+some birds' trackers were never retrieved (see Chapter 6's discussion of
+lost trackers), so `deployments.csv` has some genuinely missing values in
+its `retrieved_date` column. By default, `read.csv()` reads a missing CSV
+value as an empty string (`""`), not as R's proper "missing" value,
+`NA`. That distinction matters a lot here: only a true `NA` gets written
+to the database as a real SQL `NULL`, and our derived-table logic
+specifically checks for `retrieved_date IS NULL` to catch lost trackers.
+An empty string silently fails that check instead.
+
+The fix is one extra argument to `read.csv()`:
+
+```{r, eval=FALSE}
+deployments <- read.csv("data/bird_deployments.csv", stringsAsFactors = FALSE,
+                         na.strings = "")
+```
+
+`na.strings = ""` tells R to treat an empty field as `NA`, rather than as
+the literal two-character string `""`. Use this whenever a CSV column
+might have missing values you need SQL to recognize as `NULL`.
 
 ### Your turn
 
-1. **Create and populate the `frogs` table**, using `data/frogs.csv`.
+1. **Create and populate the `birds` table**, using `data/birds.csv`.
    Remember to check the column names before writing.
 
-<!--
-ANSWER KEY (not visible in rendered output)
+2. **Create and populate the `trackers` table**, using
+   `data/trackers.csv`.
 
-dbExecute(con, "CREATE TABLE frogs (
-  frog_id INTEGER PRIMARY KEY,
-  sex TEXT,
-  first_capture_date TEXT,
-  mortality_date TEXT
-);")
+3. **Create and populate the `deployments` table**, using
+   `data/bird_deployments.csv`. This table has no ready-made primary key in
+   the CSV, and (per the note above) a column with real missing values,
+   you'll need to handle both.
 
-frogs <- read.csv("data/frogs.csv", stringsAsFactors = FALSE)
-names(frogs)
-names(frogs)[1] <- "frog_id"
-dbWriteTable(con, "frogs", frogs, append = TRUE)
--->
+4. **Create and populate the `gps_fixes` table**, using
+   `data/bird_gps_fixes.csv`. Same as above: no ready-made primary key.
 
-2. **Create and populate the `capture_sites` table**, using
-   `data/capture_sites.csv`. Remember to check both names and column
-   order.
+5. **Derive `bird_locations`** from `deployments` and `gps_fixes`,
+   matching each raw fix to the bird whose deployment was active at that
+   time. You're welcome to adapt the `INSERT INTO ... SELECT` statement
+   from the walkthrough above rather than writing it entirely from
+   scratch, the point of this step is understanding *why* it works, not
+   memorizing SQL syntax. Make sure your version correctly picks up
+   fixes from lost trackers too, not just retrieved ones.
 
-<!--
-ANSWER KEY (not visible in rendered output)
-
-dbExecute(con, "CREATE TABLE capture_sites (
-  site_id INTEGER PRIMARY KEY,
-  site_name TEXT,
-  latitude REAL,
-  longitude REAL
-);")
-
-capture_sites <- read.csv("data/capture_sites.csv", stringsAsFactors = FALSE)
-names(capture_sites)
-capture_sites <- capture_sites[, c("site", "site_name", "latitude", "longitude")]
-names(capture_sites)[1] <- "site_id"
-dbWriteTable(con, "capture_sites", capture_sites, append = TRUE)
--->
-
-3. **Create and populate the `tags` table**, using `data/tags.csv`.
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-dbExecute(con, "CREATE TABLE tags (
-  tag_id INTEGER PRIMARY KEY,
-  tag_model TEXT
-);")
-
-tags <- read.csv("data/tags.csv", stringsAsFactors = FALSE)
-names(tags)
-names(tags) <- c("tag_id", "tag_model")
-dbWriteTable(con, "tags", tags, append = TRUE)
--->
-
-4. **Create and populate the `deployments` table**, using
-   `data/deployments.csv`. This table has no ready-made primary key in
-   the CSV, you'll need to generate one in R.
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-dbExecute(con, "CREATE TABLE deployments (
-  deployment_id INTEGER PRIMARY KEY,
-  frog_id INTEGER,
-  tag_id INTEGER,
-  deployed_date TEXT,
-  retrieved_date TEXT,
-  FOREIGN KEY (frog_id) REFERENCES frogs(frog_id),
-  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
-);")
-
-deployments <- read.csv("data/deployments.csv", stringsAsFactors = FALSE)
-names(deployments)
-deployments$deployment_id <- 1:nrow(deployments)
-deployments <- deployments[, c("deployment_id", "frog_id", "tag_id",
-                                "deployed_date", "retrieved_date")]
-dbWriteTable(con, "deployments", deployments, append = TRUE)
--->
-
-5. **Create and populate the `raw_gps_data` table**, using
-   `data/raw_gps_data.csv`. Same as above: no ready-made primary key.
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-dbExecute(con, "CREATE TABLE raw_gps_data (
-  reading_id INTEGER PRIMARY KEY,
-  tag_id INTEGER,
-  timestamp TEXT,
-  raw_lat REAL,
-  raw_lon REAL,
-  FOREIGN KEY (tag_id) REFERENCES tags(tag_id)
-);")
-
-raw_gps_data <- read.csv("data/raw_gps_data.csv", stringsAsFactors = FALSE)
-names(raw_gps_data)
-raw_gps_data$reading_id <- 1:nrow(raw_gps_data)
-raw_gps_data <- raw_gps_data[, c("reading_id", "tag", "timestamp", "lat", "lon")]
-names(raw_gps_data) <- c("reading_id", "tag_id", "timestamp", "raw_lat", "raw_lon")
-dbWriteTable(con, "raw_gps_data", raw_gps_data, append = TRUE)
--->
-
-6. **Derive `processed_gps_data`** from `deployments` and
-   `raw_gps_data`, matching each raw reading to the frog whose deployment
-   was active at that time. You're welcome to adapt the `INSERT INTO ...
-   SELECT` statement from this chapter rather than writing it entirely
-   from scratch, the point of this step is understanding *why* it works,
-   not memorizing SQL syntax.
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-dbExecute(con, "CREATE TABLE processed_gps_data (
-  location_id INTEGER PRIMARY KEY,
-  frog_id INTEGER,
-  timestamp TEXT,
-  lat REAL,
-  lon REAL,
-  FOREIGN KEY (frog_id) REFERENCES frogs(frog_id)
-);")
-
-dbExecute(con, "
-  INSERT INTO processed_gps_data (frog_id, timestamp, lat, lon)
-  SELECT
-    deployments.frog_id,
-    raw_gps_data.timestamp,
-    raw_gps_data.raw_lat,
-    raw_gps_data.raw_lon
-  FROM deployments
-  LEFT JOIN raw_gps_data USING (tag_id)
-  WHERE raw_gps_data.tag_id = deployments.tag_id
-  AND (
-    (
-      (strftime(raw_gps_data.timestamp) >= strftime(deployments.deployed_date)) AND
-      (strftime(raw_gps_data.timestamp) <= strftime(deployments.retrieved_date))
-    )
-    OR
-    (
-      (raw_gps_data.timestamp >= deployments.deployed_date) AND
-      (deployments.retrieved_date IS NULL)
-    )
-  );
-")
--->
-
-7. **Confirm your work**: query `processed_gps_data` and check that the
-   row count matches `raw_gps_data`.
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-dbGetQuery(con, "SELECT COUNT(*) AS n FROM raw_gps_data;")
-dbGetQuery(con, "SELECT COUNT(*) AS n FROM processed_gps_data;")
-
-Both should return 160.
--->
+6. **Confirm your work**: query `bird_locations` and check that the row
+   count matches `gps_fixes`. If it doesn't, and specifically if it's
+   short by roughly the number of lost-tracker deployments, revisit the
+   note on missing values above.
 
 ### What to submit
 
