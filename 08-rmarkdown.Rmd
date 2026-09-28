@@ -129,7 +129,7 @@ code, and a closing backtick, right in the middle of regular text.
 chunk):
 
 ```
-The average frog weight in our dataset is `r round(avg_weight$avg_weight, 1)` grams.
+The average frog weight in our dataset is `r ''``r round(avg_weight$avg_weight, 1)` grams.
 ```
 
 (This assumes the `avg_weight` object from the previous chunk has
