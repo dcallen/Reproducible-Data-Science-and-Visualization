@@ -82,11 +82,10 @@ set off by three backticks and curly braces containing the language name.
 **Try it now:** Create a new RMarkdown document, and add this chunk
 anywhere in the body:
 
-````
-```{r}
+
+<pre><code>&#96;&#96;&#96;{r}
 2 + 2
-```
-````
+&#96;&#96;&#96;</code></pre>
 
 Knit the document. You should see both the code itself and its output
 (`4`) appear in your rendered document.
