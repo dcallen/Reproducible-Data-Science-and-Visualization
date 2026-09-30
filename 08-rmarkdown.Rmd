@@ -106,14 +106,21 @@ constantly:
 computes the average frog weight, this time with `echo=FALSE` so only the
 result shows, not the code itself:
 
+**Try it now:** Add a second chunk that connects to the frog database and
+computes the average frog weight, this time with `echo=FALSE` so only
+the result shows, not the code itself:
+
 ````
-```{r, echo=FALSE, eval=FALSE}
+```{r, echo=FALSE}
 library(DBI)
 con <- dbConnect(RSQLite::SQLite(), "data/frogs.sqlite")
 avg_weight <- dbGetQuery(con, "SELECT AVG(weight_g) AS avg_weight FROM morphometrics;")
 avg_weight
 ```
 ````
+
+Knit again. Notice the code itself doesn't appear this time, only the
+number.
 
 Knit again. Notice the code itself doesn't appear this time, only the
 number.
