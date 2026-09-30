@@ -61,7 +61,6 @@ itself). It's not actually a markup language like HTML, it's a format
 for representing structured data, key-value pairs, lists, nested
 settings, in a simple, human-readable way, which is exactly the job it
 does here.
-
 ```
 ---
 title: "Frog Morphometrics Summary"
@@ -107,21 +106,49 @@ constantly:
 - `fig.width` / `fig.height`: control the size of any plot the chunk
   produces.
 
+### Setting the working directory for all chunks
+
+By default, when you knit a document, every chunk's working directory is
+set to the folder the `.Rmd` file itself lives in, not wherever your R
+console's working directory happens to be set to at the time. This can
+be a source of confusion: a relative path like `"data/frogs.sqlite"`
+might work fine when you run a chunk interactively in RStudio, then fail
+when you knit the whole document, if your console and your `.Rmd` file
+aren't in the same place.
+
+To set a single working directory for every chunk in the document, add a
+setup chunk near the very top, right after your YAML header, using
+`knitr::opts_knit$set()`:
+
+<pre><code>&#96;&#96;&#96;{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/path/to/your/course-repo")
+&#96;&#96;&#96;
+</code></pre>
+
+Every chunk after this one, for the rest of the document, will use that
+folder as its working directory, regardless of where the `.Rmd` file
+itself is saved. Giving this chunk the name `setup` (right after `r` in
+the curly braces) isn't required, but it's a strong, widely used
+convention, it signals to anyone reading your document that this chunk's
+job is configuration, not analysis.
+
+**Try it now:** Add a setup chunk like the one above to the top of your
+document, using `getwd()` (from Chapter 6) to check your current working
+directory first if you're not sure what path to use. Add a second chunk
+below it that just runs `getwd()` again, then knit, and confirm it
+reports the folder you set, not the folder your `.Rmd` file is saved in.
+
 **Try it now:** Add a second chunk that connects to the frog database and
 computes the average frog weight, this time with `echo=FALSE` so only
 the result shows, not the code itself:
 
-````
-```{r, echo=FALSE}
+<pre><code>&#96;&#96;&#96;{r, echo=FALSE}
 library(DBI)
-con <- dbConnect(RSQLite::SQLite(), "data/frogs.sqlite")
-avg_weight <- dbGetQuery(con, "SELECT AVG(weight_g) AS avg_weight FROM morphometrics;")
+con &lt;- dbConnect(RSQLite::SQLite(), "data/frogs.sqlite")
+avg_weight &lt;- dbGetQuery(con, "SELECT AVG(weight_g) AS avg_weight FROM morphometrics;")
 avg_weight
-```
-````
-
-Knit again. Notice the code itself doesn't appear this time, only the
-number.
+&#96;&#96;&#96;
+</code></pre>
 
 Knit again. Notice the code itself doesn't appear this time, only the
 number.
