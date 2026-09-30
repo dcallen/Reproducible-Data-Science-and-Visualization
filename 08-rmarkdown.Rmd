@@ -51,11 +51,16 @@ we'll use throughout this chapter). RStudio will generate a starter
 document with some example content already in it, feel free to delete
 everything below the header and start fresh.
 
-### YAML headers
+#### YAML headers
 
 Every RMarkdown document begins with a **YAML header**: a block between
 two lines of three dashes, specifying document-level metadata like the
-title, author, date, and output format.
+title, author, date, and output format. YAML stands for "YAML Ain't
+Markup Language," a recursive acronym (the "Y" refers to the acronym
+itself). It's not actually a markup language like HTML, it's a format
+for representing structured data, key-value pairs, lists, nested
+settings, in a simple, human-readable way, which is exactly the job it
+does here.
 
 ```
 ---
@@ -79,7 +84,7 @@ set off by three backticks and curly braces containing the language name.
 anywhere in the body:
 
 ````
-```{r, eval=FALSE}
+```{r}
 2 + 2
 ```
 ````
@@ -101,10 +106,6 @@ constantly:
   reader doesn't need to see).
 - `fig.width` / `fig.height`: control the size of any plot the chunk
   produces.
-
-**Try it now:** Add a second chunk that connects to the frog database and
-computes the average frog weight, this time with `echo=FALSE` so only the
-result shows, not the code itself:
 
 **Try it now:** Add a second chunk that connects to the frog database and
 computes the average frog weight, this time with `echo=FALSE` so only
@@ -147,9 +148,51 @@ no manual copy-pasting.
 
 ### Text formatting
 
-Everything outside of code chunks is plain Markdown, the same syntax
-we've used throughout this course: `**bold**`, `*italics*`, `# headers`,
-`- bullet lists`, and so on (see Chapter 2 if you need a refresher).
+Everything outside of code chunks is plain Markdown text. A few
+essentials:
+
+**Headers**, made with one or more `#` symbols, more `#`s for a smaller
+heading:
+
+```
+# Biggest heading
+## Smaller heading
+### Even smaller heading
+```
+
+**Bold** and *italics*:
+
+```
+**this text is bold**
+*this text is italic*
+```
+
+Bullet lists, using a hyphen and a space:
+
+```
+- first item
+- second item
+- third item
+```
+
+Numbered lists, using a number, a period, and a space:
+
+```
+1. first step
+2. second step
+3. third step
+```
+
+Links, with the visible text in square brackets immediately followed by
+the URL in parentheses:
+
+```
+[R Markdown documentation](https://rmarkdown.rstudio.com/)
+```
+
+**Try it now:** Add a header, a sentence with one bold word and one
+italic word, and a bulleted list of three items to your document. Knit
+it, and confirm each renders the way you'd expect.
 
 ### Embedding images
 
