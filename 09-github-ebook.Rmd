@@ -208,33 +208,11 @@ You should see a website with a sidebar, two pages, and a search box. On the "My
 
 By default, bookdown writes the finished website into a folder called `_book`. We changed that to `docs` with the line `output_dir: "docs"` in `_bookdown.yml`, because that's the folder our workflow file publishes. If the two ever disagree, the build can succeed and publishing can still fail, as you'll see later in this chapter.
 
-**Try it now:** See what happens without that line. This R code puts a `#` in front of `output_dir` in `_bookdown.yml`, which turns the line into a comment. Then it rebuilds the book and lists the folders:
-
-```{r, eval=FALSE}
-cfg <- readLines("_bookdown.yml")
-cfg <- sub("^output_dir", "# output_dir", cfg)
-writeLines(cfg, "_bookdown.yml")
-
-bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
-list.dirs(recursive = FALSE)
-```
-
-A new `_book` folder appears. Now undo the change, delete the extra folder, and rebuild:
-
-```{r, eval=FALSE}
-cfg <- readLines("_bookdown.yml")
-cfg <- sub("^# output_dir", "output_dir", cfg)
-writeLines(cfg, "_bookdown.yml")
-unlink("_book", recursive = TRUE)
-
-bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
-```
-
 ### Putting the book under version control
 
 Everything you learned in Chapters 2 and 3 applies here. The one new idea is deciding what to track: your source files (the `.Rmd` files, the `.yml` files, and the workflow file) belong in Git, and the built website in `docs` does not, because GitHub can regenerate it at any time.
 
-**Try it now:** In a terminal, move to the folder that contains `my-first-book` (Chapter 2 shows how), then run these commands. They create the repository, stage everything, and then show you what Git sees:
+**Try it now:** In a terminal, change directory to the folder that contains `my-first-book`, then run these commands. They create the repository, stage everything, and then show you what Git sees:
 
 ```
 cd my-first-book
@@ -333,7 +311,7 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-You don't need to memorize any of this, but it helps to know what each part does if you need to troubleshoot something:
+It can be helpful to know what each part does if you need to troubleshoot something:
 
 - `on:` says when the workflow runs: on every push to the `main` branch, and also when you start it by hand from the Actions tab (`workflow_dispatch`).
 - `permissions:` gives the workflow the access it needs to publish to Pages.
