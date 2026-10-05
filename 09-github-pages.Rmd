@@ -1,0 +1,604 @@
+# Automatically Generated Websites with GitHub Pages
+
+In Chapter 8, you learned to turn RMarkdown documents into HTML, the standard format for web pages. From there to a real website is a short step, thanks to **GitHub Pages**, a free service that serves the files in a GitHub repository as a website. Because the site lives in a repository, everything from Chapters 2 and 3 applies to it: every change is tracked, collaborators can contribute through pull requests, and you can always go back to an earlier version.
+
+In this chapter, you'll build a small multi-page book with the `bookdown` package and publish it with GitHub Pages. You'll also set up **GitHub Actions** so that the website rebuilds itself every time you push a change. This is exactly how the textbook you're reading is built and published.
+
+Before you start, you'll need:
+
+- Git installed, and a GitHub account with a personal access token (Chapters 2 and 3).
+- R, RStudio, and the `bookdown` package (see the Overview chapter).
+- A terminal (Chapter 2).
+
+## Bookdown
+
+The `bookdown` package is built on top of RMarkdown, so it uses the same syntax you learned in Chapter 8. On top of that, it lets you split a document across multiple pages, adds a sidebar for navigation and a search box, and lets pages cross-reference each other. The result is a professional-looking web book in the GitBook style.
+
+**Try it now:** Confirm that `bookdown` is installed by loading it. If R says there is no package called `bookdown`, run the `install.packages()` line first.
+
+```{r, eval=FALSE}
+install.packages("bookdown")  # only needed if you don't already have it
+library(bookdown)
+```
+
+### Anatomy of a bookdown project
+
+A bookdown project is just a folder of plain text files:
+
+- `index.Rmd` is the first page of the book. Its YAML header holds the book's title and a line, `site: bookdown::bookdown_site`, that tells R the folder is a bookdown project.
+- Chapter files, such as `01-first-chapter.Rmd`, hold one chapter each. They don't need a YAML header.
+- `_bookdown.yml` holds settings for how the book is built: which files to include and in what order, what to name the merged file, and where to put the finished website.
+- `_output.yml` holds settings for the output format, in our case a GitBook-style website.
+
+Two rules prevent most build errors. First, every chapter file starts with a single level-one heading (`# Chapter title`), and the sections inside it use `##`, `###`, and so on. Second, only `index.Rmd` has a YAML header.
+
+Each chapter becomes its own web page, named after the chapter's title: a chapter titled "My First Chapter" becomes `my-first-chapter.html`. Chapters are numbered automatically. To leave a heading unnumbered, add `{-}` after it, as the Overview of this book does.
+
+If you don't say otherwise, bookdown puts `index.Rmd` first and merges the remaining files in alphabetical order, which is why chapter files are named with leading numbers like `01-` and `02-`. We list the files explicitly in `_bookdown.yml` anyway, so that the order is written down rather than implied.
+
+### Creating a book
+
+Rather than starting from a template, you'll create a minimal book with a few lines of R, so you can see every file that makes it up.
+
+**Try it now:** Choose a folder where you keep projects. It must not be inside another Git repository (for example, not inside your course repository), because Git repositories nested inside one another get confusing. First check where R is working:
+
+```{r, eval=FALSE}
+getwd()
+```
+
+If that isn't the folder you want, move to it with `setwd()`, replacing the path below with your own (Chapters 2 and 6 show how to find a folder's path):
+
+```{r, eval=FALSE}
+setwd("/path/to/your/projects/folder")
+```
+
+Now run all of the following in one go. It creates a folder called `my-first-book` containing a complete, working book:
+
+```{r, eval=FALSE}
+# Create the folders (the hidden .github/workflows folders are created too)
+dir.create("my-first-book/.github/workflows", recursive = TRUE)
+
+# index.Rmd: the first page of the book
+writeLines(r"(---
+title: "My First Book"
+site: bookdown::bookdown_site
+---
+
+# Welcome {-}
+
+This is my first book, published with GitHub Pages.
+)", "my-first-book/index.Rmd")
+
+# 01-first-chapter.Rmd: a chapter containing a live code chunk.
+# The object "fence" holds three backticks, which mark the start and end of a code chunk.
+fence <- "```"
+writeLines(c(
+  "# My First Chapter",
+  "",
+  "This page was built from an RMarkdown file. The code below runs every time the book is built.",
+  "",
+  paste0(fence, "{r}"),
+  "summary(cars)",
+  fence
+), "my-first-book/01-first-chapter.Rmd")
+
+# _bookdown.yml: which files make up the book, and where the finished website goes
+writeLines(r"(book_filename: "my-first-book"
+output_dir: "docs"
+delete_merged_file: true
+rmd_files: ["index.Rmd", "01-first-chapter.Rmd"]
+)", "my-first-book/_bookdown.yml")
+
+# _output.yml: the output format (a GitBook-style website)
+writeLines(r"(bookdown::gitbook:
+  config:
+    toc:
+      collapse: section
+)", "my-first-book/_output.yml")
+
+# .gitignore: files Git should not track (the built website is rebuilt by GitHub)
+writeLines(c(
+  ".Rproj.user",
+  ".Rhistory",
+  ".RData",
+  ".DS_Store",
+  "/docs/",
+  "/_book/",
+  "/_bookdown_files/",
+  "/my-first-book.Rmd",
+  "/_main.Rmd",
+  "*.knit.md",
+  "*.utf8.md"
+), "my-first-book/.gitignore")
+
+# publish.yml: the GitHub Actions workflow that builds and publishes the book
+writeLines(r"(name: Render and deploy book
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install R package dependencies
+        run: |
+          install.packages(c("bookdown", "rmarkdown"))
+        shell: Rscript {0}
+
+      - name: Render book
+        run: |
+          bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
+        shell: Rscript {0}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+)", "my-first-book/.github/workflows/publish.yml")
+```
+
+You now have a folder that looks like this:
+
+```
+my-first-book/
+├── index.Rmd
+├── 01-first-chapter.Rmd
+├── _bookdown.yml
+├── _output.yml
+├── .gitignore
+└── .github/
+    └── workflows/
+        └── publish.yml
+```
+
+Two of these files are new to us. `.gitignore` you already know from Chapter 2. It lists `/docs/` because the finished website is a build product: GitHub will rebuild it from your source files each time, so it doesn't need its own tracked history. `publish.yml` is the workflow file that makes GitHub build and publish the book for you. We'll take it apart shortly. The `.github` folder is hidden because its name starts with a period, so you won't see it in Finder or File Explorer unless you show hidden files (Chapter 2 explains how).
+
+### Building the book locally
+
+Turning the `.Rmd` files into a website is called **building** the book, and it's done by the `render_book()` function. It has to run from inside the book folder, and you tell it which output format to use. In the GitBook format, bookdown runs every code chunk, weaves the output into the text, and writes one HTML page per chapter.
+
+**Try it now:** Move into the book folder, build the book, and open the result in your browser:
+
+```{r, eval=FALSE}
+setwd("my-first-book")
+bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
+browseURL("docs/index.html")
+```
+
+You should see a website with a sidebar, two pages, and a search box. On the "My First Chapter" page, the output of `summary(cars)` appears below the code, exactly as it would in a knitted document from Chapter 8. Back in your book folder, you'll find that bookdown created a new folder called `docs` holding all the website files.
+
+### Where does the output go?
+
+By default, bookdown writes the finished website into a folder called `_book`. We changed that to `docs` with the line `output_dir: "docs"` in `_bookdown.yml`, because that's the folder our workflow file publishes. If the two ever disagree, the build can succeed and publishing can still fail, as you'll see later in this chapter.
+
+**Try it now:** See what happens without that line. This R code puts a `#` in front of `output_dir` in `_bookdown.yml`, which turns the line into a comment. Then it rebuilds the book and lists the folders:
+
+```{r, eval=FALSE}
+cfg <- readLines("_bookdown.yml")
+cfg <- sub("^output_dir", "# output_dir", cfg)
+writeLines(cfg, "_bookdown.yml")
+
+bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
+list.dirs(recursive = FALSE)
+```
+
+A new `_book` folder appears. Now undo the change, delete the extra folder, and rebuild:
+
+```{r, eval=FALSE}
+cfg <- readLines("_bookdown.yml")
+cfg <- sub("^# output_dir", "output_dir", cfg)
+writeLines(cfg, "_bookdown.yml")
+unlink("_book", recursive = TRUE)
+
+bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
+```
+
+### Putting the book under version control
+
+Everything you learned in Chapters 2 and 3 applies here. The one new idea is deciding what to track: your source files (the `.Rmd` files, the `.yml` files, and the workflow file) belong in Git, and the built website in `docs` does not, because GitHub can regenerate it at any time.
+
+**Try it now:** In a terminal, move to the folder that contains `my-first-book` (Chapter 2 shows how), then run these commands. They create the repository, stage everything, and then show you what Git sees:
+
+```
+cd my-first-book
+git init
+git add .
+git status
+git ls-files
+```
+
+You should see six files listed, including `.github/workflows/publish.yml`, and no `docs` folder, even though one exists on your computer. If a file you expected is missing from the list, Git may be ignoring it. This command tells you which rule is responsible, and on which line of `.gitignore` it lives (replace the path with the file you're asking about):
+
+```
+git check-ignore -v docs/index.html
+```
+
+The output has the form `.gitignore:LINE:RULE   PATH`. If the command prints nothing, the file is not being ignored.
+
+## Publishing with GitHub Pages and GitHub Actions
+
+### GitHub Pages
+
+GitHub Pages serves the files in a repository as a website. It works with **static** sites, meaning sites made of ready-to-serve HTML, CSS, and image files, which is exactly what bookdown produces. Two facts are worth knowing up front:
+
+- On a free GitHub account, Pages requires a **public** repository. Paid plans can use private repositories, but even then the published website is visible to anyone on the internet.
+- The address of a site is `https://USERNAME.github.io/REPOSITORY-NAME/`, with your GitHub username and your repository's name filled in.
+
+### GitHub Actions
+
+GitHub Actions is GitHub's built-in automation. You describe a series of steps in a **workflow file**, a YAML file stored in the `.github/workflows/` folder of your repository, and tell GitHub when to run them, for example every time someone pushes. GitHub then starts a temporary virtual computer, called a **runner**, runs your steps on it, and throws the computer away afterwards.
+
+Put together with Pages, here is what happens every time you push to `main`:
+
+1. GitHub starts a brand-new Linux computer with nothing on it but a basic operating system.
+2. It downloads a copy of your repository onto that computer.
+3. It installs R and pandoc, then the R packages your book needs.
+4. It builds the book.
+5. It uploads the `docs` folder and publishes it as your website.
+
+The most important fact about this process is in step 1. The runner starts empty every time, so anything your book depends on must be written down in your repository. That requirement is the whole point of reproducible science, and it's also the source of nearly every build failure you'll encounter.
+
+### The workflow file
+
+Here is the workflow file you created, `publish.yml`:
+
+```yaml
+name: Render and deploy book
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install R package dependencies
+        run: |
+          install.packages(c("bookdown", "rmarkdown"))
+        shell: Rscript {0}
+
+      - name: Render book
+        run: |
+          bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
+        shell: Rscript {0}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+You don't need to memorize any of this, but it helps to know what each part does:
+
+- `on:` says when the workflow runs: on every push to the `main` branch, and also when you start it by hand from the Actions tab (`workflow_dispatch`).
+- `permissions:` gives the workflow the access it needs to publish to Pages.
+- `jobs:` lists two jobs. The `build` job creates the website. The `deploy` job publishes it, and `needs: build` means it only runs if the build succeeded. This is why a broken build never takes down your live site: the last good version stays online.
+- `runs-on: ubuntu-24.04` chooses the operating system of the runner. We name a specific version, rather than the default `ubuntu-latest`, so the environment doesn't change underneath you when GitHub updates what "latest" means.
+- Each entry under `steps:` is one step. Lines starting with `uses:` borrow a ready-made step written by someone else, such as `actions/checkout` (download your repository) and `r-lib/actions/setup-r` (install R). Steps with `run:` execute code, here R code, as the `shell: Rscript {0}` line says.
+- The `Install R package dependencies` step installs `bookdown` and `rmarkdown`. If your book uses any other package, it has to be added to this line.
+- The `path: docs` line tells GitHub which folder to publish. It has to match the `output_dir` in `_bookdown.yml`.
+
+**Try it now:** Open `.github/workflows/publish.yml` in RStudio (**File > Open File...**, then show hidden files if the dialog doesn't list the `.github` folder). Find the three lines that answer these questions: Which branch triggers a build? Which line installs R packages? Which folder gets published? Then compare your answer to the third question with the `output_dir` line in `_bookdown.yml`. They should name the same folder.
+
+### Pushing the book to GitHub
+
+You'll push your book to a new GitHub repository, following the same steps as in Chapter 3.
+
+1. On GitHub, create a new repository named `my-first-book`. Choose **Public**, and leave every box unchecked (no README, no `.gitignore`, no license), since your folder already has its own files.
+2. In your terminal, from inside `my-first-book`, commit your files and connect to the new repository. Replace `YOUR-USERNAME` with your GitHub username. It's the only thing you need to change. If you already ran `git init` and `git add .` earlier, running them again is harmless:
+
+```
+git init
+git add .
+git commit -m "First commit"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/my-first-book.git
+git push -u origin main
+```
+
+When Git asks for your password, paste your personal access token, as in Chapter 3.
+
+**One extra token permission.** Your repository contains a file inside `.github/workflows/`. GitHub treats workflow files as sensitive, because they can run code on GitHub's computers, so a personal access token needs the **workflow** scope, in addition to **repo**, to push one. If your token doesn't have it, the push is rejected with a message saying that GitHub refuses to let a personal access token create or update a workflow file without the `workflow` scope. To fix it, go to GitHub, then **Settings**, **Developer settings**, **Personal access tokens**, **Tokens (classic)**, click your token, tick the box for **workflow**, and click **Update token**. Then repeat the push. The token itself normally stays the same, so you can keep using the one you already have. If GitHub shows you a new token instead, use that one. Chapter 3 shows how to find these settings.
+
+### Turning on GitHub Pages
+
+Pushing started your first workflow run, but GitHub doesn't know yet that you want to publish a website. You need to switch on Pages and tell it to use GitHub Actions.
+
+On your repository's page, go to **Settings**, then **Pages** in the left sidebar. Under **Build and deployment**, set **Source** to **GitHub Actions**. There's nothing to save: the setting applies as soon as you choose it.
+
+If the first run reached the `deploy` job before you did this, that job failed with an error like "Failed to create deployment (status: 404)" followed by "Ensure GitHub Pages has been enabled". That's expected, and easy to fix. Now that Pages is on, go to the **Actions** tab, click the failed run, click **Re-run jobs** at the top right, and choose **Re-run failed jobs**.
+
+**Try it now:** Turn on Pages as described above and re-run the failed jobs if you need to. When both jobs in the run show green checks, the `deploy` job lists the address of your site. Open it. It will be `https://YOUR-USERNAME.github.io/my-first-book/`, and it can take a minute or two to start working after the first deployment.
+
+## Maintaining the website
+
+Once the site is live, updating it is the same as updating any repository: edit your files, commit, and push. GitHub Actions rebuilds the book from your source files and replaces the website with the new version, usually within a couple of minutes. You never have to build the book on your own computer for it to be published, and you never commit the `docs` folder. Building locally is still useful as a quick way to preview your changes before you push them.
+
+**Try it now:** Add a plot to your chapter and publish it. The first block of R code adds a new code chunk to the end of `01-first-chapter.Rmd`. Make sure R is working in your `my-first-book` folder (run `getwd()` to check, and `setwd("my-first-book")` if it isn't), then run:
+
+```{r, eval=FALSE}
+fence <- "```"
+cat("\nHere is a plot of the built-in cars dataset:\n\n", fence, "{r}\nplot(cars)\n", fence, "\n",
+    sep = "", file = "01-first-chapter.Rmd", append = TRUE)
+```
+
+Preview it locally if you like, then commit and push from your terminal:
+
+```
+git add .
+git commit -m "Add a plot"
+git push
+```
+
+Go to the **Actions** tab and watch the new run. When it finishes, refresh your website, and the plot should appear on the "My First Chapter" page.
+
+## When the build fails
+
+Sooner or later a build will fail. The failure is useful information: it means your project depends on something that wasn't written down, which is exactly what the runner's empty-computer design is meant to expose. A failed build never harms your site, because the `deploy` job only runs after a successful build, so the last good version stays online while you fix the problem.
+
+### How to read a failed run
+
+1. Open the **Actions** tab and click the run with the red X. Runs are named after the commit message that started them.
+2. In the left sidebar, click the job that failed (usually `build`).
+3. The job lists its steps. Find the one with a red X and click it to expand its log.
+4. Scroll to the bottom of the log and read the last 15 to 20 lines. The **Search logs** box at the top is handy for finding the word `Error`.
+
+Don't rely on the **Annotations** box at the top of the run page. It only summarizes the failure with a message like "Process completed with exit code 1", which doesn't say why. The reason is always in the log of the failing step. You may also see yellow warnings about Node.js being deprecated. They are harmless, and you can ignore them.
+
+One more thing to know: the step with the red X is where the build *stopped*, which is not always where the mistake was *made*. The exercise at the end of this chapter shows an example.
+
+### Common failures
+
+| Where it fails | What the log says | Likely cause | Fix |
+|----------------|-------------------|--------------|-----|
+| Your push, before any run starts | Refusing to allow a personal access token to create or update a workflow without the `workflow` scope | Your token lacks the `workflow` scope | Add the scope to your token, then push again |
+| `Render book` | `there is no package called 'X'`, preceded by a line starting `Quitting from` | A chunk uses a package the workflow didn't install | Add the package to the install line in `publish.yml` |
+| `Render book` | `cannot open file 'data/...': No such file or directory` | A chunk reads a file that isn't in the repository, or the path is wrong | Commit the file, and use a relative path |
+| `Render book` | `replacement has length zero`, mentioning `split_chapters` | Heading levels are out of order, for example a chapter file that doesn't start with a single `#` heading | Fix the headings, as described earlier in this chapter |
+| `Render book` | `File book.bib not found in resource path` | The YAML header refers to a bibliography file that doesn't exist | Remove those lines, or add the file |
+| `Run actions/upload-pages-artifact` | `tar: docs: Cannot open: No such file or directory` | The book was built into `_book`, because `output_dir: "docs"` is missing from `_bookdown.yml` | Add the line back |
+| `deploy` | `Failed to create deployment (status: 404)`, `Ensure GitHub Pages has been enabled` | Pages isn't switched on, or its source isn't GitHub Actions | Turn it on, then re-run the failed jobs |
+| The site loads, but an image is missing | No error at all | The image was never pushed, often because a `.gitignore` rule such as `*.png` is ignoring it | Run `git check-ignore -v` on the image to find the rule, fix it, then commit and push the image |
+
+**Try it now:** Take a look at a successful log before you need to read a failed one. In your repository's **Actions** tab, open the latest green run, click the `build` job, and expand the `Render book` step. Find the line that begins `Output created:`. It tells you which folder the book was written to, which is the first thing to check when the upload step fails.
+
+## Packages and data in the build
+
+Your book builds on your own computer with hundreds of packages installed and your whole file system available. The runner has none of that. It starts with R and the packages that come with R, plus whatever your workflow installs, and it can only see the files in your repository.
+
+**Try it now:** Count the packages installed on your own computer, to see how big the difference is:
+
+```{r, eval=FALSE}
+nrow(installed.packages())
+```
+
+Compare that number with the two packages (`bookdown` and `rmarkdown`) the workflow installs. This gap explains the most common failure of all: code that works on your computer but not in the build. Three rules prevent it:
+
+1. **Packages.** Every package your code chunks use must be in the `install.packages()` line of `publish.yml`. If a chunk calls `library(ggplot2)`, change the line to `install.packages(c("bookdown", "rmarkdown", "ggplot2"))`. (Chapter 12 introduces a more systematic way to keep track of packages.)
+2. **Data.** Every file your chunks read must be committed to the repository, and read with a relative path, such as `data/mydata.csv`. The runner can't see anything on your computer.
+3. **Code that shouldn't run during the build.** If a chunk only needs to be displayed, not executed (this textbook does this for code that depends on files that aren't in its repository), add `eval=FALSE` to the chunk options, as you learned in Chapter 8.
+
+Remember also that a public repository is public. Only commit data you have permission to share, which your final project dataset already is, since you chose a publicly available one.
+
+## A simpler alternative: publishing a folder
+
+GitHub Pages can also publish a folder directly from a branch, without any workflow file. You'd build the book on your own computer, commit the `docs` folder, and in **Settings**, **Pages**, set **Source** to **Deploy from a branch**, with the branch `main` and the folder `/docs`. This approach works, with two requirements: the `docs` folder must not be listed in `.gitignore`, and you should add an empty file named `.nojekyll` to the `docs` folder so that GitHub doesn't try to process your files with Jekyll, a different website builder.
+
+We use GitHub Actions instead for two reasons. First, the website is always built from the source files in the repository, so it can't get out of date if you forget to rebuild it before pushing. Second, the built files never clutter your repository history. The cost is the extra setup you just did, but you only do it once per project.
+
+## Using this for your final project
+
+Your final project can live in a book like this one, with one chapter for each stage of your workflow: cleaning, exploring, and visualizing your data. Publishing it gives you a shareable address for your finished work, and the build check gives you something valuable along the way: if your book builds on GitHub's empty runner, you know someone else could reproduce your analysis from your repository alone.
+
+## In-Class Activity: Publish Your Own Book
+
+In this activity, you'll publish `my-first-book`, update it, and then deliberately break the build twice so you learn to recognize and fix the most common failures.
+
+### Part 1: Check your setup
+
+You'll continue with the `my-first-book` folder you created earlier in this chapter. If you don't have one yet, go back to "Creating a book" and run the code there first. Then make sure R is working inside the book folder. This code moves there if you aren't already inside it, and then prints the folder R is working in:
+
+```{r, eval=FALSE}
+if (basename(getwd()) != "my-first-book") setwd("my-first-book")
+getwd()
+```
+
+The path that prints should end in `my-first-book`. If R says it cannot change the working directory, first move to the folder that contains `my-first-book` (with `setwd()` and the path to that folder, as earlier in this chapter), then run the code again. If you restart R at any point during the activity, run this code again.
+
+### Part 2: Publish the book
+
+1. If you haven't already, push your book to GitHub, turn on Pages, and open your website, following the steps under "Pushing the book to GitHub" and "Turning on GitHub Pages" earlier in this chapter. The commands, in a terminal inside `my-first-book`, are repeated here for convenience (replace `YOUR-USERNAME` with your GitHub username). If you already ran `git init` and `git add .` earlier, running them again is harmless.
+
+```
+git init
+git add .
+git commit -m "First commit"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/my-first-book.git
+git push -u origin main
+```
+
+2. When your site is live, copy its address (`https://YOUR-USERNAME.github.io/my-first-book/`). You'll submit it at the end.
+
+### Part 3: Update the live site
+
+1. Add a plot to the first chapter, if you didn't already do so in the "Maintaining the website" section. In R:
+
+```{r, eval=FALSE}
+fence <- "```"
+cat("\nHere is a plot of the built-in cars dataset:\n\n", fence, "{r}\nplot(cars)\n", fence, "\n",
+    sep = "", file = "01-first-chapter.Rmd", append = TRUE)
+```
+
+2. Commit and push, then watch the run in the **Actions** tab and refresh your website when it finishes:
+
+```
+git add .
+git commit -m "Add a plot"
+git push
+```
+
+### Part 4: Break it, then fix it
+
+**Drill A: a missing package.**
+
+1. In R, add a code chunk that loads the `DBI` package (which you installed in Chapter 6, so it works fine on your computer):
+
+```{r, eval=FALSE}
+fence <- "```"
+cat("\n", fence, "{r}\nlibrary(DBI)\n", fence, "\n", sep = "", file = "01-first-chapter.Rmd", append = TRUE)
+```
+
+2. Commit and push, then watch the run:
+
+```
+git add .
+git commit -m "Drill A: add a chunk that uses DBI"
+git push
+```
+
+3. The run will fail. Following "How to read a failed run," find out which step failed and why. Check your live website: is it still online?
+
+**Question A.** Which step of the `build` job failed? Which line of its log tells you what went wrong? Why did the same code work on your own computer? In your answers, also say what happened to your live website while the build was failing.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+The "Render book" step failed. Near the end of its log there is a line starting "Quitting from" that names the file and lines of the failing chunk (01-first-chapter.Rmd), followed by "there is no package called 'DBI'".
+The same code worked on the student's computer because DBI is installed there, but the runner starts empty and only installs the packages listed in publish.yml (bookdown and rmarkdown).
+The live website stayed online, showing the previous version, because the deploy job only runs when the build job succeeds (it appears as skipped).
+-->
+
+4. Fix it by adding `DBI` to the install line of the workflow file. This R code does that, then you commit and push:
+
+```{r, eval=FALSE}
+wf <- readLines(".github/workflows/publish.yml")
+wf <- sub('install.packages(c("bookdown", "rmarkdown"))',
+          'install.packages(c("bookdown", "rmarkdown", "DBI"))',
+          wf, fixed = TRUE)
+writeLines(wf, ".github/workflows/publish.yml")
+```
+
+```
+git add .
+git commit -m "Drill A: install DBI in the workflow"
+git push
+```
+
+5. Confirm the run now succeeds. Because the chunk only loads the package and doesn't print anything, your website looks the same as before.
+
+**Drill B: the build succeeds but publishing fails.**
+
+1. In R, comment out the `output_dir` line in `_bookdown.yml`, as you did earlier in this chapter:
+
+```{r, eval=FALSE}
+cfg <- readLines("_bookdown.yml")
+cfg <- sub("^output_dir", "# output_dir", cfg)
+writeLines(cfg, "_bookdown.yml")
+```
+
+2. Commit and push, then watch the run:
+
+```
+git add .
+git commit -m "Drill B: comment out output_dir"
+git push
+```
+
+3. The run will fail again, but in a different place.
+
+**Question B.** Which step failed this time? The `Render book` step has a green check, so find the line in its log that tells you where the book was written, and use it to explain why the failing step couldn't find what it needed.
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+The "Run actions/upload-pages-artifact" step failed, with the lines "tar: docs: Cannot open: No such file or directory" and "tar: Error is not recoverable: exiting now".
+The "Render book" log contains the line "Output created: _book/index.html". With output_dir commented out, bookdown used its default folder, _book, so no docs folder was ever created, but the workflow uploads the folder docs.
+The mistake (the missing output_dir) was made in the build, but the failure showed up one step later, in the upload step. The live website was unaffected.
+-->
+
+4. Fix it by restoring the line, then commit and push:
+
+```{r, eval=FALSE}
+cfg <- readLines("_bookdown.yml")
+cfg <- sub("^# output_dir", "output_dir", cfg)
+writeLines(cfg, "_bookdown.yml")
+```
+
+```
+git add .
+git commit -m "Drill B: restore output_dir"
+git push
+```
+
+5. Confirm the run succeeds and your website is live and up to date.
+
+### What to submit
+
+Submit the following:
+
+1. The address of your published website.
+2. Your written answers to Question A and Question B (two or three sentences each).
+
+## References
+
+- The `bookdown` book: <https://bookdown.org/yihui/bookdown/>
+- GitHub Pages documentation: <https://docs.github.com/en/pages>
+- GitHub Actions documentation: <https://docs.github.com/en/actions>
