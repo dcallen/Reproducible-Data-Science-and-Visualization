@@ -1,4 +1,4 @@
-# Automatically Generated Websites with GitHub Pages
+# Automatically Generated E-books with GitHub Pages
 
 In Chapter 8, you learned to turn RMarkdown documents into HTML, the standard format for web pages. From there to a real website is a short step, thanks to **GitHub Pages**, a free service that serves the files in a GitHub repository as a website. Because the site lives in a repository, everything from Chapters 2 and 3 applies to it: every change is tracked, collaborators can contribute through pull requests, and you can always go back to an earlier version.
 
@@ -51,6 +51,8 @@ If that isn't the folder you want, move to it with `setwd()`, replacing the path
 ```{r, eval=FALSE}
 setwd("/path/to/your/projects/folder")
 ```
+
+You haven't learned much R yet (Chapter 10 starts from the beginning), so don't worry about understanding every line of the code below. Think of it as a script that creates files for you: each `writeLines()` call writes one file, and the text inside the quotation marks is that file's contents. What matters in this chapter is the files themselves, so read their contents to see what each one does, and come back to the R code after Chapter 10. The same goes for the short R snippets later in this chapter that add to or edit these files. 
 
 Now run all of the following in one go. It creates a folder called `my-first-book` containing a complete, working book:
 
@@ -130,7 +132,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -156,7 +158,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -180,7 +182,13 @@ my-first-book/
         └── publish.yml
 ```
 
-Two of these files are new to us. `.gitignore` you already know from Chapter 2. It lists `/docs/` because the finished website is a build product: GitHub will rebuild it from your source files each time, so it doesn't need its own tracked history. `publish.yml` is the workflow file that makes GitHub build and publish the book for you. We'll take it apart shortly. The `.github` folder is hidden because its name starts with a period, so you won't see it in Finder or File Explorer unless you show hidden files (Chapter 2 explains how).
+Two of these files are new to us. `.gitignore` you already know from Chapter 2. It lists `/docs/` because the finished website is a build product: GitHub will rebuild it from your source files each time, so it doesn't need its own tracked history. `publish.yml` is the workflow file that makes GitHub build and publish the book for you. We'll take it apart shortly. 
+
+**Viewing hidden files.** Remember that files and folders whose names start with a period, such as `.github` and `.gitignore`, are hidden by default. To see them:
+
+- **Mac:** In Finder, open the folder and press **Command + Shift + . (period)**. Press it again to hide them.
+- **Windows 11:** In File Explorer, click **View**, then **Show**, then check **Hidden items**.
+- **Windows 10:** In File Explorer, click the **View** tab and check **Hidden items**.
 
 ### Building the book locally
 
@@ -290,7 +298,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -316,7 +324,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -325,12 +333,12 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-You don't need to memorize any of this, but it helps to know what each part does:
+You don't need to memorize any of this, but it helps to know what each part does if you need to troubleshoot something:
 
 - `on:` says when the workflow runs: on every push to the `main` branch, and also when you start it by hand from the Actions tab (`workflow_dispatch`).
 - `permissions:` gives the workflow the access it needs to publish to Pages.
 - `jobs:` lists two jobs. The `build` job creates the website. The `deploy` job publishes it, and `needs: build` means it only runs if the build succeeded. This is why a broken build never takes down your live site: the last good version stays online.
-- `runs-on: ubuntu-24.04` chooses the operating system of the runner. We name a specific version, rather than the default `ubuntu-latest`, so the environment doesn't change underneath you when GitHub updates what "latest" means.
+- `runs-on: ubuntu-latest` chooses the operating system of the runner. Ubuntu is a free version of Linux, an operating system like Windows or macOS that is widely used on servers. The word `latest` means GitHub picks its newest recommended version, which is convenient, but it also means the environment can change underneath you when GitHub updates what "latest" means. If a build that used to work suddenly fails without any change on your part, this is one possible cause, and the fix is to name a specific version instead, such as `ubuntu-24.04`.
 - Each entry under `steps:` is one step. Lines starting with `uses:` borrow a ready-made step written by someone else, such as `actions/checkout` (download your repository) and `r-lib/actions/setup-r` (install R). Steps with `run:` execute code, here R code, as the `shell: Rscript {0}` line says.
 - The `Install R package dependencies` step installs `bookdown` and `rmarkdown`. If your book uses any other package, it has to be added to this line.
 - The `path: docs` line tells GitHub which folder to publish. It has to match the `output_dir` in `_bookdown.yml`.
@@ -379,7 +387,16 @@ cat("\nHere is a plot of the built-in cars dataset:\n\n", fence, "{r}\nplot(cars
     sep = "", file = "01-first-chapter.Rmd", append = TRUE)
 ```
 
-Preview it locally if you like, then commit and push from your terminal:
+Preview your change on your own computer before you push it. In R, with the working directory set to your `my-first-book` folder, build the book and open the result in your browser:
+
+```{r, eval=FALSE}
+bookdown::render_book("index.Rmd", output_format = "bookdown::gitbook")
+browseURL("docs/index.html")
+```
+
+If your browser doesn't open on its own, open the `docs` folder inside `my-first-book` in Finder or File Explorer and double-click `index.html`. Either way, you're opening a file on your own drive, so nothing is published yet. The `docs` folder is listed in `.gitignore`, so building the book here doesn't change what you push. GitHub builds its own copy.
+
+Then commit and push from your terminal:
 
 ```
 git add .

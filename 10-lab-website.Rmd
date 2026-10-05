@@ -1,0 +1,459 @@
+# Building a Lab Website with a Template
+
+In Chapter 9, you built a website from files you wrote yourself and published it with GitHub Pages. That approach gives you complete control, but it also means designing everything: the layout, the navigation, the pages. Often you'd rather start from a working, good-looking site and replace its content with your own. That's what a **template** is for.
+
+In this chapter, you'll build a website for a research lab using the **Lab Website Template**, an open-source template from the Greene Lab. It comes with pages for research, projects, team members, a blog, and contact information, and it can build your publication list automatically from identifiers such as DOIs. Almost everything you've learned so far shows up again: Git and GitHub for tracking changes, pull requests for reviewing them, GitHub Actions for automation, GitHub Pages for hosting, and YAML and Markdown for writing the content.
+
+The template is released under the BSD 3-Clause open-source license, which lets you use and modify it freely. (Leave the `LICENSE.md` file in your repository.) Its authors maintain thorough documentation at <https://greene-lab.gitbook.io/lab-website-template-docs>. This chapter covers the essentials rather than every feature, so it's worth bookmarking.
+
+If you don't belong to a lab, you can build a personal research site the same way. Just treat yourself as a one-person lab.
+
+## Before you start
+
+You'll need a GitHub account (Chapters 2 and 3) and a web browser. Everything in this chapter can be done on GitHub's website, so there is nothing new to install.
+
+Throughout the chapter, we'll build a site for a made-up group, the Rivera Lab at Example University. Every file you need is given in full, so you can copy and paste it. When you're ready to build the real thing, you'll swap in your own information.
+
+**A public website is public.** Before you put anything on a real lab site, keep these points in mind:
+
+- Anyone can read the site, and search engines can index it. The pull request previews we'll use are public links too.
+- Only include information about people who have agreed to it, and only use photos you have the right to share.
+- Don't publish unpublished results or data, or anything covered by a data-sharing agreement.
+- Your institution may have rules about lab websites, so check before you launch.
+
+## How the template works
+
+### What it's built with
+
+The template uses **Jekyll**, a static site generator. Like bookdown in Chapter 9, it reads a folder of plain text files and turns them into a website made of ordinary HTML pages. You never run Jekyll yourself: a GitHub Actions workflow runs it every time you save a change, and puts the result where GitHub Pages can publish it. Unlike bookdown, no R code runs here.
+
+### Two kinds of files
+
+Almost everything you edit is one of two kinds of files.
+
+1. **Pages** are Markdown files, the same Markdown you learned in Chapter 8. Each one begins with a **front matter** block between two lines of three dashes. It's written in YAML, just like the header of an RMarkdown document, and it holds details such as the page title. The content comes below it.
+2. **Data files** are YAML lists stored in the `_data` folder, such as a list of publications. The template turns each item in the list into something on the page, like a citation card. A YAML list of records works a lot like a table, with one record per row and one field per column, as in Chapters 4 and 5. Keep your information in data files and let the template take care of presentation.
+
+You'll also see lines in curly braces and percent signs, like the one below, inside pages:
+
+```
+{% include list.html data="members" component="portrait" %}
+```
+
+These are **components**, reusable building blocks that display things like lists, buttons, and figures. You don't need to learn how they work to edit your site. Leave them in place unless you're following the documentation.
+
+### What to edit and what to leave alone
+
+| Folder or file | What it holds | Do you edit it? |
+|----------------|---------------|-----------------|
+| `_config.yaml` | Site title, description, and social links (at the top of the file) | Yes, the top section only |
+| `index.md` | Your homepage | Yes |
+| `research/`, `projects/`, `team/`, `blog/`, `contact/` | One folder per page, each holding an `index.md` | Yes |
+| `_members/` | One Markdown file per team member | Yes |
+| `_posts/` | One Markdown file per blog post | Yes |
+| `_data/` | Data files: publication sources, projects, and generated citations | Yes, but never `citations.yaml` |
+| `images/` | Photos and logos | Yes |
+| `.github/` | The automation (workflow files) | No |
+| `_cite/` | The code that builds citations | No |
+| `_includes/`, `_layouts/`, `_plugins/`, `_scripts/`, `_styles/` | The template's building blocks and styling | Not at first |
+| `Gemfile`, `Gemfile.lock` | The software packages the site needs | No |
+| `LICENSE.md`, `CITATION.cff` | Information about the template itself | No, but keep them |
+
+Each page of your site comes from a folder: `team/index.md` becomes the page at `your-site/team`. To add a page, you add a folder with an `index.md` file in it. To remove one, delete the folder.
+
+### How is this different from Chapter 9?
+
+- **No R.** Jekyll builds this site, not bookdown, so you won't run any code.
+- **A different way of publishing.** In Chapter 9, we set the Pages source to GitHub Actions, and our workflow uploaded the finished site directly. This template does it differently: a workflow builds the site and saves the result in a branch of your repository called `gh-pages`, and you tell Pages to publish that branch (the "Deploy from a branch" option). Both are normal ways to publish with Pages.
+- **Bots that commit.** Some of the template's workflows save changes to your repository on their own, for example when they update your citations. This matters when you work on your own computer, as you'll see shortly.
+
+## Creating your site
+
+There are two ways to copy a template repository: **generating** a new repository from it, or **forking** it as you learned in Chapter 3. A forked repository stays linked to the original and carries its entire history. A generated repository starts fresh, with no history and no link back. The template's authors recommend generating, so that's what we'll do.
+
+**Try it now:** Create your own copy of the template and publish it.
+
+1. Go to <https://github.com/greenelab/lab-website-template> and click the green **Use this template** button, then choose **Create a new repository**.
+2. Make sure the owner is your own account. Name the repository `rivera-lab-website`. Choose **Public**, and leave **Include all branches** unchecked. Click **Create repository**.
+3. Let the template's workflows write to your repository. In your new repository, go to **Settings**, then **Actions** in the left sidebar, then **General**. Scroll to **Workflow permissions**, select **Read and write permissions**, and tick **Allow GitHub Actions to create and approve pull requests**. Click **Save**.
+4. Go to the **Actions** tab. In the left sidebar, click the workflow named **first-time-setup**, then click the **Run workflow** dropdown on the right and click the green **Run workflow** button. Wait for the run to finish with a green check, which takes about 30 seconds. It creates the `gh-pages` branch, removes files only the template itself needs, and replaces the template's placeholders with your GitHub username.
+5. Go to **Settings**, then **Pages**. Under **Build and deployment**, set **Source** to **Deploy from a branch**. Set the branch to **gh-pages**, leave the folder as **/ (root)**, and click **Save**.
+6. Wait about three minutes. Several workflows run one after another, and you can watch them in the **Actions** tab. Then open `https://YOUR-USERNAME.github.io/rivera-lab-website/`, replacing `YOUR-USERNAME` with your GitHub username.
+
+If you open the address too early, you may see a page that just says "Placeholder homepage". That's the stand-in the setup workflow creates, and the first real build replaces it. Your repository's README also gets a link to your live site automatically.
+
+### Where your site lives
+
+Your site's address depends on your repository's name, but you have options:
+
+| Option | Example address | How to set it up |
+|--------|-----------------|------------------|
+| Project site (the default) | `your-username.github.io/rivera-lab-website` | Nothing to do. It's where your site appears when you turn on Pages. |
+| User site | `your-username.github.io` | Rename the repository to `your-username.github.io` in **Settings**. |
+| Custom domain | `rivera-lab.com` | Buy a domain from a registrar, point it to GitHub Pages, and enter it in the Pages settings. The template's authors recommend this for a professional look. A `.com` typically costs about $10 per year. |
+
+Here, `your-username` is your GitHub username (or your organization's name). After changing any of these, wait from 30 seconds to three minutes for the site to redeploy.
+
+## Changing your site safely
+
+Every change to your site is a Git commit, so you have the same choices you learned in Chapters 2 and 3:
+
+- **Commit directly to `main`.** The change is published as soon as the site rebuilds. This is quick, and fine for small fixes.
+- **Use a branch and a pull request.** The template builds a **preview** of your branch, so you can look at the result before it goes live. A bot posts a link to the preview in a comment on the pull request. The preview appears about 30 seconds after the comment does, so if you see an error page at first, wait a moment and refresh. When you close the pull request, the preview is removed.
+
+GitHub's website is a perfectly good editor for all of this. Open a file and click the pencil icon to edit it. Use **Add file**, then **Create new file** to make a new one (typing a slash in the name creates folders), and **Add file**, then **Upload files** to add images.
+
+If you'd rather work on your own computer, clone the repository and use the Git workflow from Chapters 2 and 3. Because bots commit to your repository, run `git pull` before you start editing. Otherwise your push may be rejected, exactly as in Chapter 3. Previewing a Jekyll site on your own computer requires installing either Docker or Ruby and Python. We skip that here, because pull request previews do the same job without installing anything. The template's documentation describes the local options.
+
+## Site settings
+
+The settings that apply to your whole site live at the top of `_config.yaml`: your site's title, a subtitle, a description, background images for the header and footer, and your social links. The rest of the file holds Jekyll's own settings, which you can leave alone.
+
+The setup workflow fills in some of these for you, using your GitHub username. It leaves others untouched, and one of them is a trap: the `orcid` and `google-scholar` links in `links:` still point to the template authors' own profiles. If you leave them, your site's footer will link visitors to someone else's page. In `links:`, you can use `email`, `orcid`, `google-scholar`, `github`, `linkedin`, `bluesky`, `youtube`, and several others. Only list the ones you actually want to show.
+
+**Try it now:** Update your site settings, using a pull request so you can preview the change first.
+
+1. In your repository, open `_config.yaml` and click the pencil icon.
+2. Delete everything above the line `### jekyll settings`, and paste in the following:
+
+```yaml
+# site properties and page defaults
+title: Rivera Lab
+subtitle: at Example University
+description: The Rivera Lab studies how reproducible workflows speed up ecological research.
+header: images/background.jpg
+footer: images/background.jpg
+proofer: false
+
+# site social media and other links
+links:
+  email: contact@example.com
+
+```
+
+3. Click **Commit changes...**. In the dialog, choose **Create a new branch for this commit and start a pull request**, name the branch `update-config`, and click **Propose changes**. On the next page, click **Create pull request**.
+4. Wait for the checks at the bottom of the pull request to finish. Then look for the comment with the preview link, and open the link. The header should now say "Rivera Lab", with "at Example University" beside it.
+5. Go back to the pull request and click **Merge pull request**, then **Confirm merge**, then **Delete branch**. After a few minutes, the live site updates.
+
+## Pages and front matter
+
+Every page starts with front matter, a YAML block between two lines of three dashes. A few of the fields you'll use most:
+
+- `title` is the page's title, which also appears in the browser tab.
+- `nav` puts the page in the navigation bar at the top of the site. Its `order` field sets the position (lowest number first), and `tooltip` sets the text that appears when you hover over the link.
+- `description` is the text that search engines show under your page's link.
+
+A Markdown file without front matter is ignored by Jekyll and never becomes a page. If a page doesn't need any details, leave the two lines of dashes with nothing between them.
+
+**Try it now:** Edit your homepage, and add a new page.
+
+1. Open `index.md` and click the pencil icon. The setup workflow wrote a heading and a one-sentence description near the top, ending just before the first line that starts with `{% include section.html`. Replace those lines with the following:
+
+```markdown
+# Rivera Lab
+
+We study how reproducible workflows speed up ecological research.
+
+```
+
+2. Commit directly to the `main` branch.
+3. Go to **Add file**, then **Create new file**. Type `awards/index.md` as the name (the slash creates the `awards` folder), and paste in the following:
+
+```markdown
+---
+title: Awards
+nav:
+  order: 6
+  tooltip: Honors and recognition
+---
+
+# {% include icon.html icon="fa-solid fa-trophy" %}Awards
+
+This page lists awards and honors received by members of our lab.
+```
+
+4. Commit directly to the `main` branch. After a few minutes, your site should have a new link, "Awards", at the end of the navigation bar. The other pages use the numbers 1 through 5 for their `order`, which is why this one uses 6.
+
+## Team members
+
+Every team member has their own Markdown file in the `_members` folder. The file's name decides the address of the member's page: a file called `alex-rivera.md` creates a page at `your-site/members/alex-rivera`. The front matter holds the details, and everything below it is the member's bio.
+
+The main fields are:
+
+- `name` is the display name.
+- `image` is the path to a photo, starting from the top of your repository, such as `images/photo.jpg`.
+- `role` is the member's role. It has to match one of the roles defined in `_data/types.yaml`: `principal-investigator`, `postdoc`, `phd`, `undergrad`, `programmer`, or `mascot`. The role decides the icon and the default description shown on the member's card.
+- `description` is optional. It replaces the default description that comes with the role.
+- `affiliation` is optional, and shows below the description.
+- `aliases` are other versions of the member's name. The member's page uses them to find their papers on your Research page.
+- `links` are the member's own links, such as `email`, `orcid`, or `home-page`.
+
+**Try it now:** Add the lab's PI to your team. Go to **Add file**, then **Create new file**, type `_members/alex-rivera.md` as the name, and paste in the following:
+
+```markdown
+---
+name: Alex Rivera
+image: images/photo.jpg
+role: principal-investigator
+affiliation: Example University
+aliases:
+  - A. Rivera
+  - A Rivera
+links:
+  email: contact@example.com
+---
+
+Alex leads the Rivera Lab. Alex's research uses reproducible workflows to study how ecosystems respond to change.
+```
+
+Commit directly to `main`. After a few minutes, open your Team page: Alex should be listed, and clicking Alex's card opens a page with the bio. The three sample members that came with the template (Jane Smith, John Doe, and Sarah Johnson) are still there. We'll deal with them in "Making it yours."
+
+## Publications with automatic citations
+
+Maintaining a publication list by hand is tedious and error-prone, since every paper needs its title, authors, journal, date, and link typed in exactly. The template takes a different approach: you list **identifiers** for your papers, and a tool called **Manubot** looks up all the details.
+
+Three terms will keep things clear:
+
+- A **source** is one published item you want to cite, such as a paper, book, or web page.
+- A **metasource** is one item that stands for many sources. An author's ORCID iD is the classic example, because it leads to a list of that author's papers.
+- A **citation** is the complete, detailed information about a source: title, authors, publisher, date, and link.
+
+Here's how they connect:
+
+1. You write sources and metasources in files in the `_data` folder. A file's name must start with `sources` for sources (for example, `sources.yaml`) and with `orcid` for ORCID iDs (for example, `orcid.yaml`).
+2. A workflow called the **cite process** runs on GitHub every time you push to `main` or open a pull request. It expands your metasources, asks Manubot for the details of each source, and saves all the results in `_data/citations.yaml`.
+3. The Research page displays the contents of `citations.yaml`.
+
+**Never edit `citations.yaml`.** It's overwritten every time the cite process runs. This is the same pattern as turning `raw_gps_data` into `processed_gps_data` in Chapter 7: the input is yours to change, and the output is generated from it. As in Chapter 1, the work is done by a script rather than by hand, so you fix the input and let the process regenerate the output.
+
+An entry in a sources file looks like this. Only `id` is required, and everything else is optional:
+
+```yaml
+- id: doi:10.1371/journal.pcbi.1003285
+  type: paper
+  description: A short note about the paper, written in Markdown.
+  tags:
+    - reproducibility
+```
+
+The `id` can take several forms, including a DOI, a PubMed ID, a PubMed Central ID, and an arXiv ID:
+
+| Type of identifier | Example |
+|--------------------|---------|
+| DOI | `doi:10.1371/journal.pcbi.1003285` |
+| PubMed ID | `pubmed:29424689` |
+| PubMed Central ID | `pmc:PMC5640425` |
+| arXiv ID | `arxiv:1806.05726` |
+
+For a whole publication list at once, use an ORCID iD in a file whose name starts with `orcid`:
+
+```yaml
+- orcid: 0000-0002-4655-3773
+```
+
+If Manubot gets a detail wrong, you can correct it by adding the right value to the source. For a paper that an ORCID list returned but you don't want to show, give it an entry with `remove: true`:
+
+```yaml
+- id: doi:10.1371/journal.pcbi.1003285
+  title: A corrected title
+- id: pubmed:29424689
+  remove: true
+```
+
+The template also checks ORCID lists on a schedule and opens a pull request when you have new publications. See the documentation for how to turn that on.
+
+Two cautions about data files. First, YAML is strict about spacing: indent with spaces (never tabs), start each list item with a dash and a space, and put a space after every colon. Second, if you don't need a data file, **delete it** rather than emptying it. The cite process expects each file to be a list, and an empty file makes it stop with an error.
+
+The template comes with sample data that you need to replace. `_data/orcid.yaml` holds the template authors' ORCID iD, which means a new site's Research page lists their publications, not yours.
+
+**Try it now:** Replace the sample publications with two of your own.
+
+1. In your repository, open `_data/orcid.yaml`, click the **...** menu at the top right of the file, and choose **Delete file**. Commit directly to `main`.
+2. Open `_data/sources.yaml` and click the pencil icon. Delete everything in the file, and paste in the following:
+
+```yaml
+- id: doi:10.1371/journal.pcbi.1003285
+  type: paper
+  description: Ten practical habits that make computational research easier to repeat.
+  tags:
+    - reproducibility
+
+- id: doi:10.1371/journal.pcbi.1005510
+  type: paper
+  description: A minimum set of computing practices that every researcher can adopt.
+  tags:
+    - reproducibility
+    - best practices
+```
+
+3. Commit directly to `main`.
+4. Open `research/index.md`. Near the top, under the heading "Highlighted", find the line that begins `{% include citation.html lookup=`. It looks for a paper from the sample data, which no longer exists. Replace that whole line with the following, then commit directly to `main`:
+
+```
+{% include citation.html lookup="doi:10.1371/journal.pcbi.1003285" style="rich" %}
+```
+
+5. Wait a few minutes. The cite process runs first, and then the site rebuilds. The Research page should now list your two papers, and the highlighted one at the top. You'll also see a new commit from a bot called "Update citations" in your repository's history. Open `_data/citations.yaml` to see what Manubot generated (look, but don't edit!).
+
+## Blog posts
+
+Each blog post is a Markdown file in the `_posts` folder. The file name has to follow the pattern `YYYY-MM-DD-title-of-the-post.md`, because Jekyll uses it for the post's date and address. The front matter holds details such as:
+
+- `title` is the title of the post.
+- `author` is the file name of the author's page in `_members`, without the `.md`. If it matches, the author's portrait appears on the post automatically. If it doesn't, the text is just displayed as written.
+- `image` is a thumbnail for the post.
+- `tags` is a list of topics, which the Blog page lets visitors filter by.
+
+By default, Jekyll leaves out posts dated in the future. If a new post doesn't show up, check its date first.
+
+**Try it now:** Write your lab's first blog post. Go to **Add file**, then **Create new file**, type `_posts/2026-10-05-welcome-to-the-lab.md` as the name, and paste in the following:
+
+```markdown
+---
+title: Welcome to the Rivera Lab website
+image: images/photo.jpg
+author: alex-rivera
+tags: news, lab life
+---
+
+Welcome! This site was built from a template, and every change we make to it is tracked in Git.
+
+We'll use this blog to share news about our projects and publications.
+```
+
+Commit directly to `main`. After a few minutes, your new post should appear on the Blog page, with Alex's portrait on it.
+
+## Making it yours
+
+You now have a working site, but it's still full of the template's placeholder content. Before you share the address with anyone, go through this checklist:
+
+- **Sample team members.** Delete `jane-smith.md`, `john-doe.md`, and `sarah-johnson.md` from `_members`, and add the real members of your lab.
+- **Sample blog posts.** Delete the three example posts in `_posts`, or rewrite them. A post whose author has no member file just shows the author's name as plain text, so it's tidier to remove them.
+- **Sample projects.** The Projects page is built from `_data/projects.yaml`. Replace its entries with your own, or remove the page.
+- **Placeholder text.** Pages such as Research, Projects, Team, and Contact are full of "Lorem ipsum" filler. Replace it with real text. Searching your repository for those two words helps you find what's left.
+- **Images.** Replace the placeholder `images/photo.jpg` with real photos. Use **Add file**, then **Upload files**, into the `images` folder, and update the `image:` lines that point to them. Only use photos you have the right to share.
+- **Settings and links.** Make sure the `links` in `_config.yaml` only list accounts that exist and belong to you.
+- **Contact page.** Update the contact details, or remove the page.
+- **README.** Update it to describe your lab's website.
+
+The template's documentation also describes some optional cleanup, such as turning off GitHub features you don't need and protecting your `main` branch so that changes have to go through a pull request.
+
+## When something goes wrong
+
+The workflows that run your site are the same kind of thing you met in Chapter 9, and you read their logs the same way: open the **Actions** tab, click the run with the red X, click the job that failed, expand the step with the red X, and read the end of its log. Your README also shows status badges for the main workflows, and a red badge means that workflow's most recent run failed.
+
+This template runs several workflows, so the **Actions** tab lists many different runs. A few names to recognize:
+
+- **On push to main** runs whenever you commit directly to `main`. It updates your citations and then rebuilds your site.
+- **On pull request activity** runs when you open or update a pull request. It updates citations and then builds the preview.
+- **Update citations** is the cite process itself.
+- **Build live site** is the step that builds the finished site.
+- **pages-build-deployment** is GitHub's own step that publishes the `gh-pages` branch.
+
+The steps depend on each other. If the cite process fails, the site isn't rebuilt, so your live site stays as it was. A mistake never takes your site down, but it can stop all later updates until you fix it.
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| **first-time-setup** fails with a permissions error | Workflows still have read-only permissions | Turn on **Read and write permissions** in **Settings**, **Actions**, **General**, click **Save**, then run the workflow again |
+| `gh-pages` isn't offered in the Pages settings | **first-time-setup** hasn't finished, and it creates that branch | Wait for it to finish with a green check, then refresh the page |
+| Your site shows only "Placeholder homepage" | The first real build hasn't finished yet | Wait a few minutes and check the **Actions** tab |
+| The Research page lists someone else's papers | `_data/orcid.yaml` still holds the template's ORCID iD | Delete the file, or replace its contents with your own ORCID iD |
+| The cite process fails with a message about being unable to generate a citation for a source | A typo in an `id` | Find the `id` named in the log and correct it |
+| The cite process fails with a message that a data file is not a list of dicts | A data file is empty, or its list formatting is broken | Restore the list formatting, or delete the file |
+| A new post or page doesn't show up | The post's date is in the future, the file has no front matter, or it's in the wrong folder | Check the date, the two lines of dashes, and that posts are in `_posts` with names like `2026-10-05-title.md` |
+| An image doesn't show up | The path is wrong. Paths start from the top of the repository, such as `images/photo.jpg`, and capital letters matter | Check the path, the capitals, and that you uploaded the file |
+| A change you merged hasn't appeared | Builds take a few minutes | Wait, then refresh, and check the **Actions** tab for a red X |
+
+Finally, many of this template's features depend on GitHub Actions, which very occasionally has outages. If something fails for no reason you can find, check <https://www.githubstatus.com> before you spend an hour debugging.
+
+## Going further
+
+The template can do much more than this chapter covers. The documentation describes how to change your site's colors and fonts, use your own logo, build fancier layouts with components such as cards, figures, and grids, add a custom domain, and update your copy of the template when new versions come out. Its gallery shows what other labs have built, which is a good place to look for ideas. You'll find all of it at <https://greene-lab.gitbook.io/lab-website-template-docs>.
+
+## In-Class Activity: Join the Lab
+
+In this activity, you'll work in pairs on one partner's site, to practice the collaboration workflow you learned in Chapter 3 with the template's pull request previews. You'll also practice recognizing a failed check, and fixing it. The **owner** is the partner whose site you'll use (it should be live, as in the "Creating your site" section). The other partner is the **collaborator**.
+
+### Part 1: Set up the collaboration
+
+1. **Owner:** In your repository, go to **Settings**, then **Collaborators**, then **Add people**. Enter your partner's GitHub username and send the invitation. (Chapter 3 shows these steps in detail.)
+2. **Collaborator:** Accept the invitation. You'll find it in your email, or in your GitHub notifications.
+
+### Part 2: A pull request that adds a team member
+
+1. **Collaborator:** Open the owner's repository on GitHub. Go to **Add file**, then **Create new file**. Type `_members/sam-okafor.md` as the name, and paste in the following:
+
+```markdown
+---
+name: Sam Okafor
+image: images/photo.jpg
+role: phd
+affiliation: Example University
+aliases:
+  - S. Okafor
+links:
+  email: contact@example.com
+---
+
+Sam is a PhD student in the Rivera Lab. Sam's project uses time series data to study how wetlands respond to drought.
+```
+
+2. **Collaborator:** Click **Commit changes...**. Choose **Create a new branch for this commit and start a pull request**, name the branch `add-sam-okafor`, and click **Propose changes**. Then click **Create pull request**.
+3. **Collaborator:** Wait for the checks to finish, then open the preview link in the bot's comment. Click through to the Team page and confirm that Sam appears.
+4. **Owner:** Open the pull request. Go to the **Files changed** tab, click **Review changes**, choose **Approve**, and click **Submit review**.
+5. **Owner:** Go back to the **Conversation** tab, click **Merge pull request**, then **Confirm merge**, then **Delete branch**.
+6. **Both:** After a few minutes, refresh the live Team page and confirm that Sam appears.
+
+**Question 1.** On the Team page, Sam's card shows a graduation cap icon and the words "PhD Student", but Sam's file never says "PhD Student". Which line in Sam's file causes this, and which file in the repository defines what it produces?
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+The line "role: phd" in Sam's file. The role has to match a key in the file _data/types.yaml, which defines the phd role with a graduation cap icon and the default description "PhD Student". Because Sam's file has no description line of its own, the default text from the role is displayed.
+-->
+
+### Part 3: Break it, then fix it
+
+1. **Collaborator:** In the owner's repository, open `_data/sources.yaml` and click the pencil icon. Click in the editor, press Ctrl+End (Cmd+Down arrow on a Mac) to jump to the end of the file, press Enter twice, and paste in the following. The identifier is deliberately wrong:
+
+```yaml
+- id: doi:10.1371/journal.pcbi.NOTREAL
+  type: paper
+```
+
+2. **Collaborator:** Click **Commit changes...**. Choose **Create a new branch for this commit and start a pull request**, name the branch `add-bad-source`, click **Propose changes**, and then click **Create pull request**.
+3. **Collaborator:** Wait for the checks. At least one will fail, with a red X. Click **Details** next to the failed check, open the failed job, expand the failed step, and read the end of its log. No preview link will appear this time.
+4. **Collaborator:** Fix the problem on the same branch. On the pull request page, click the branch name (`add-bad-source`) near the top. Open `_data/sources.yaml`, click the pencil icon, delete the two lines you added, and click **Commit changes...**, committing directly to the `add-bad-source` branch.
+5. **Collaborator:** Go back to the pull request and wait for the checks to run again. They should pass, and the preview link should appear.
+6. **Collaborator:** The pull request now has no changes to merge, so close it. Click **Close pull request**, then **Delete branch**.
+
+**Question 2.** Which job failed, and which lines of its log told you what was wrong? Why didn't a preview link appear?
+
+**Question 3.** What would have happened if you had committed the bad line directly to `main` instead of using a pull request?
+
+<!--
+ANSWER KEY (not visible in rendered output)
+
+Question 2: The update-citations job failed, in its step that builds the updated citations. Its log shows error lines saying that Manubot could not generate a citation for the source doi:10.1371/journal.pcbi.NOTREAL, and ends with a line saying that 1 error occurred. The preview is built by a job that depends on the citations job succeeding, so when the citations job failed, the preview job was skipped and no preview link was posted.
+
+Question 3: The On push to main workflow would have failed at the same step, and because the site build depends on it, the live site would not have been rebuilt. Visitors would still see the previous version. But the bad line would now be on main, and every later push would fail in the same way until someone fixed it. Using a pull request caught the mistake before it reached main.
+-->
+
+### Part 4: Take it home
+
+Before you share a real lab site with anyone, go through the "Making it yours" checklist above. Replace the sample content with real information, and keep going until none of the template's placeholder content is left.
+
+### What to submit
+
+Submit the following:
+
+1. The address of the owner's live site.
+2. The address of the pull request from Part 2.
+3. Your written answers to Questions 1, 2, and 3 (two or three sentences each).
+
+## References
+
+- Lab Website Template documentation: <https://greene-lab.gitbook.io/lab-website-template-docs>
+- Lab Website Template on GitHub: <https://github.com/greenelab/lab-website-template>
+- Manubot: <https://manubot.org/>
+- GitHub Pages documentation: <https://docs.github.com/en/pages>
