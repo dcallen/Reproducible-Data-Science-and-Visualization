@@ -699,7 +699,7 @@ containing:
 
 Last week, you designed the tables your final project needs. This week, you'll build them. As Chapter 5 explained, a database is a set of related tables, and you don't need SQL to have one. You'll write one R script that reads your raw data, splits it into the tables in your design, saves each table as a CSV file, and checks the result. Because the whole process lives in a script, anyone can rebuild your tables from your raw data by running it again, including you, a month from now. That is what makes them reproducible.
 
-There are two tracks. **Track A** saves your tables as CSV files and checks them with R, and it's what most of you should do. **Track B** is optional: it builds a SQLite database instead, as in Chapters 6 and 7, which is worth choosing if you want to query your data with SQL, or if your design has several linked tables and you want the database to enforce the links. Both tracks start the same way and check the same things. Everything in the numbered steps below is Track A, and Track B has its own section after them.
+There are two tracks. **Track A** saves your tables as CSV files, and it's what most of you will probably do. **Track B** is optional: it builds a SQLite database instead, as in Chapters 6 and 7, which is worth choosing if you want to query your data with SQL, or if your design has several linked tables and you want the database to enforce the links. Both tracks start the same way and check the same things. Everything in the numbered steps below is Track A, and Track B has its own section after them.
 
 ### Before you start
 
@@ -711,197 +711,15 @@ You'll need:
 
 This assignment expects your raw data to be CSV files, which is what most public data portals provide. If yours are Excel files, save a CSV copy of each sheet you need into `data/raw/` and keep the originals too.
 
-You'll write your code in a script file and run it from the **Console**, the pane in RStudio where R prints its results, marked by a `>` prompt. Paste commands into the Console or into your script, never into an `.Rmd` file.
+### Track A: 
 
-### What to do
+**1. Save your tables in the data/raw folder in your repo.**
 
-**1. Run the worked example.**
+Make sure you save your data as .csv files, that file names are computer readable, that all column names within each file are computer readable, that your data are tidy, that you have primary keys in each table, foreign keys in each table if you have multiple tables, and that all your file and column names follow the conventions you set in your week 6 assignment.
 
-Before you touch your own data, see what a successful build looks like. In RStudio, create a new script (**File > New File > R Script**), paste in the following, and click **Source** at the top of the script. It uses a small dataset that comes with R (the carbon dioxide uptake of 12 plants, measured 7 times each) and splits it into two related tables, `plants` and `measurements`, just as you might split a frog's fixed information from its repeated measurements (Chapter 5). It saves its files in a temporary folder, so nothing is saved on your computer.
+**2. Commit and push.**
 
-```{r, eval=FALSE}
-# 1. Read the raw data ---------------------------------------------------------
-# This example uses a dataset that comes with R, so it runs as written.
-# In your own script, you will read your own file or files instead (see step 3).
-co2 <- as.data.frame(CO2)
-co2$Plant <- as.character(co2$Plant)
-co2$Type <- as.character(co2$Type)
-co2$Treatment <- as.character(co2$Treatment)
-
-# 2. Split the raw data into tables --------------------------------------------
-# Table 1: plants. One row per plant, holding information that never changes.
-plants <- unique(co2[, c("Plant", "Type", "Treatment")])
-names(plants) <- c("plant_id", "origin", "treatment")
-
-# Table 2: measurements. One row per measurement, with a unique identifier (measurement_id) as its key.
-measurements <- co2[, c("Plant", "conc", "uptake")]
-names(measurements) <- c("plant_id", "co2_concentration", "co2_uptake")
-measurements$measurement_id <- 1:nrow(measurements)
-measurements <- measurements[, c("measurement_id", "plant_id", "co2_concentration", "co2_uptake")]
-
-# 3. Save each table as a CSV file ---------------------------------------------
-# This example saves its files in a temporary folder. In your own script, use
-# "data/processed" instead, the folder you made in Week 2.
-out_dir <- file.path(tempdir(), "tables")
-dir.create(out_dir, showWarnings = FALSE)
-write.csv(plants, file.path(out_dir, "plants.csv"), row.names = FALSE, na = "")
-write.csv(measurements, file.path(out_dir, "measurements.csv"), row.names = FALSE, na = "")
-
-# 4. Check the tables ----------------------------------------------------------
-# Read the files back from disk, so that you are checking what was actually saved
-plants <- read.csv(file.path(out_dir, "plants.csv"), stringsAsFactors = FALSE, na.strings = "")
-measurements <- read.csv(file.path(out_dir, "measurements.csv"), stringsAsFactors = FALSE, na.strings = "")
-
-# The number of rows in each table
-cat("plants:", nrow(plants), "rows\n")
-cat("measurements:", nrow(measurements), "rows\n")
-
-# Keys that appear more than once (each of these should be 0)
-cat("Duplicated plant_id values in plants:", sum(duplicated(plants$plant_id)), "\n")
-cat("Duplicated measurement_id values in measurements:", sum(duplicated(measurements$measurement_id)), "\n")
-
-# Rows that point to something that doesn't exist (this should be 0)
-cat("Measurements whose plant_id is not in plants:", sum(!(measurements$plant_id %in% plants$plant_id)), "\n")
-
-# The number of missing values in each column
-print(colSums(is.na(plants)))
-print(colSums(is.na(measurements)))
-
-# A summary that uses both tables, to prove the relationship works
-combined <- merge(measurements, plants, by = "plant_id")
-print(aggregate(co2_uptake ~ treatment, data = combined, FUN = mean))
-```
-
-When it runs, you should see this in the Console:
-
-```
-plants: 12 rows
-measurements: 84 rows
-Duplicated plant_id values in plants: 0
-Duplicated measurement_id values in measurements: 0
-Measurements whose plant_id is not in plants: 0
- plant_id    origin treatment
-        0         0         0
-   measurement_id          plant_id co2_concentration        co2_uptake
-                0                 0                 0                 0
-   treatment co2_uptake
-1    chilled   23.78333
-2 nonchilled   30.64286
-```
-
-The script has four sections, and the next steps ask you to adapt each one. Section 4 is the important one. A CSV file will happily store a row that points to a plant that doesn't exist, or the same key twice, and it won't tell you. A database system such as SQLite can refuse those rows. So here, your checks do that job: they count the problems, and every count should be 0. Missing values can be legitimate, so those counts only need to make sense.
-
-**2. Start your own script.**
-
-Open a new script (**File > New File > R Script**), paste in the example above, and save it as `01-build-database.R` in the `scripts` folder of your final project repository. You'll edit this copy in the steps below. Leave the example in your first script untouched, so you can refer back to it.
-
-**3. Read your raw data (section 1).**
-
-Replace the example code in section 1 with code that reads your own raw data. What to write depends on how your data came.
-
-*One file.* Read it into a data frame called `raw`, using your file's name:
-
-```{r, eval=FALSE}
-raw <- read.csv("data/raw/my-data.csv", stringsAsFactors = FALSE, na.strings = "")
-```
-
-*Several files, each of which is already its own table* (for example, one file of sites and another of observations). Read each one into its own data frame, named for what it holds:
-
-```{r, eval=FALSE}
-sites_raw <- read.csv("data/raw/sites.csv", stringsAsFactors = FALSE, na.strings = "")
-observations_raw <- read.csv("data/raw/observations.csv", stringsAsFactors = FALSE, na.strings = "")
-```
-
-*Several files that are pieces of one table* (for example, one file per year, all with the same columns). Read them all and stack them into one data frame. The first line lists every file in `data/raw` whose name matches the pattern, so change the pattern to match only the files you want. The second line prints the list, so you can check it before going on:
-
-```{r, eval=FALSE}
-files <- list.files("data/raw", pattern = "^survey-.*\\.csv$", full.names = TRUE)
-print(files)
-raw <- do.call(rbind, lapply(files, read.csv, stringsAsFactors = FALSE, na.strings = ""))
-```
-
-If this stops with `names do not match previous names`, one of the files names its columns differently from the others. Read that file on its own and fix its column names with `names()` before stacking.
-
-Sometimes a piece of information, such as the year, appears only in the file names. In that case, record each row's file name in a column as you read the files, and then pull the year out of it. This version works when the only digits in the file names are the year, as in `survey-2022.csv`:
-
-```{r, eval=FALSE}
-read_one <- function(file) {
-  data <- read.csv(file, stringsAsFactors = FALSE, na.strings = "")
-  data$source_file <- basename(file)
-  data
-}
-raw <- do.call(rbind, lapply(files, read_one))
-raw$year <- as.integer(gsub("[^0-9]", "", raw$source_file))
-```
-
-The `na.strings = ""` part tells R to treat an empty cell as a missing value (you met this in Chapter 7's activity). Every path starts with `data/raw/`, a relative path from the top of your project folder, as in Chapter 1.
-
-Whichever case applies, run your code, then look at what you read in, so you know the starting point: `nrow()` tells you the number of rows of each data frame, and `str()` shows each column and the kind of data R found in it. Write down the number of rows of each data frame. You'll compare them to your tables later.
-
-Look closely at the column names, using `names()`. When R reads a CSV, it replaces spaces and other special characters in column names with dots, so a column called `Water Temp C` becomes `Water.Temp.C`. Those dotted names are the ones to use when you split your data in the next step.
-
-**4. Split your data into tables (section 2).**
-
-Use your Week 6 table map. Each table in your design either already exists as its own data frame, because it came as its own file, or comes from splitting a data frame. Section 2 of the example shows the splitting pattern, and you'll repeat it for each table that needs it. (The examples call the data frame `raw`, so use the names of your own data frames.)
-
-- A table with **one row per thing** (such as one row per plant, site, or individual) comes from `unique(raw[, c(...)])`, which keeps the columns you name and removes the repeated rows. If the table has only one column, write `drop = FALSE` after the column name, as in `unique(raw[, c("Site.Name"), drop = FALSE])`, so that R keeps it as a table.
-- A table with **repeated rows** (such as measurements) comes from `raw[, c(...)]`, which keeps the columns you name and every row.
-- `names(table) <- c(...)` gives the columns their final names. Use lowercase letters and underscores, with no spaces, as in Chapter 1.
-- A table that has no natural key gets a serial number, like `measurement_id` in the example.
-
-If your Week 6 design was a **single table**, skip the splitting. Give your data frame the final column names, and add a serial key if it has no column that uniquely identifies each row:
-
-```{r, eval=FALSE}
-raw$record_id <- 1:nrow(raw)
-```
-
-A table that already came as its own file doesn't need splitting. Give its columns their final names with `names()`, and add a serial key if it has no column that uniquely identifies each row, as above.
-
-Dates need a little care. Write them as `YYYY-MM-DD`, which sorts correctly and is unambiguous, as in the databases in Chapters 5 through 7. If your dates look like `5/1/2024`, convert them (the letters after each `%` describe the format of your dates):
-
-```{r, eval=FALSE}
-raw$date <- as.character(as.Date(raw$date, format = "%m/%d/%Y"))
-```
-
-If your design needs a key that your raw data doesn't have, such as an ID for each visit to a site, create it in `raw` before you split, so that every table gets exactly the same value. For example, this builds an ID like `Alder Pond_2024-05-01` from a site column and a date column (use your own column names, and do it after converting your dates):
-
-```{r, eval=FALSE}
-raw$visit_id <- paste(raw$Site.Name, raw$Visit.Date, sep = "_")
-```
-
-**5. Save your tables (section 3).**
-
-Replace the two `write.csv()` lines with one for each of your tables, and change `out_dir` to `"data/processed"`. The file name should be the table's name, as in `plants.csv`. Two settings matter. `row.names = FALSE` stops R from adding an unwanted column of row numbers. `na = ""` writes a missing value as an empty cell, which `read.csv(..., na.strings = "")` reads back as missing.
-
-**6. Check your tables (section 4).**
-
-Adapt the checks to your tables: read each saved file back, count its rows, and count the duplicated keys. If your design has more than one table, also count the rows in each child table whose key doesn't exist in its parent table. Then run `str()` on each table and confirm that every column has the type you expect: `chr` for text, `int` for whole numbers, and `num` for numbers with decimals. Replace the final summary with one of your own that uses your tables and moves you toward one of your exploratory questions from Week 1. With several tables, join at least two of them using `merge()`, as in the example. With one table, use `aggregate()` or `table()`.
-
-The row counts should make sense. If each row of a data frame you read in became one row of a table, that table should have the same number of rows as that data frame, which you wrote down in step 3.
-
-**7. Run your script from the top.**
-
-Your script uses relative paths, which only work when R is working in the top folder of your project. Set that folder in the Console, then run the script. Replace the path with the path to your project folder (Chapters 2 and 6 show how to find it):
-
-```{r, eval=FALSE}
-setwd("/path/to/your/final-project")
-source("scripts/01-build-database.R")
-```
-
-Don't put `setwd()` inside the script. A path that works on your computer wouldn't work on anyone else's, and the script has to work for anyone (Chapter 1). Once it runs without errors, run the last two lines again. The output should be identical, because the script overwrites its own files.
-
-**8. Commit and push.**
-
-Your processed CSV files are plain text, they're small, and they let anyone see your tables on GitHub without running anything, so commit them along with your script. (If one of your files is very large, tens of megabytes, add it to `.gitignore` and tell your instructor.) In a terminal inside your project folder, run:
-
-```
-git status
-git add .
-git commit -m "Add script that builds the project tables"
-git push
-```
-
-`git status` should list `scripts/01-build-database.R` and your CSV files in `data/processed`. Then open your repository on GitHub and confirm that they're there.
+Your processed CSV files are plain text, they're small, and they let anyone see your tables on GitHub without running anything, so commit them. (If one of your files is very large, tens of megabytes, add it to `.gitignore` and tell the instructor.) 
 
 ### If something goes wrong
 
@@ -920,71 +738,9 @@ Your checks print numbers rather than errors, so a problem shows up as a count t
 
 ### Optional Track B: build a SQLite database
 
-Choose this track if you'd like to query your tables with SQL, as in Chapter 6, or if you want the database itself to refuse rows that break a relationship between tables. Steps 1 through 4 are the same, so you read your data and split it into tables exactly as above. Then replace sections 3 through 5 of your script with the following, which builds the database with the tools from Chapter 7. To see it work first, add it after sections 1 and 2 of the worked example:
+Choose this track if you'd like to query your tables with SQL, as in Chapter 6, or if you want the database itself to refuse rows that break a relationship between tables. 
 
-```{r, eval=FALSE}
-library(DBI)
-
-# If an earlier run of this script stopped with an error, close its connection first
-if (exists("con")) try(dbDisconnect(con), silent = TRUE)
-
-# 3. Create an empty database and its tables -----------------------------------
-# This example builds its database in a temporary file. In your own script, use
-# a permanent location instead, for example "data/processed/final-project.sqlite".
-db_path <- tempfile(fileext = ".sqlite")
-unlink(db_path)  # start from nothing, so the script can be run again and again
-con <- dbConnect(RSQLite::SQLite(), db_path)
-dbExecute(con, "PRAGMA foreign_keys = ON;")
-
-# Create the table that others point to first (plants), then the table that points to it
-dbExecute(con, "CREATE TABLE plants (
-  plant_id TEXT PRIMARY KEY,
-  origin TEXT NOT NULL,
-  treatment TEXT NOT NULL
-);")
-
-dbExecute(con, "CREATE TABLE measurements (
-  measurement_id INTEGER PRIMARY KEY,
-  plant_id TEXT NOT NULL,
-  co2_concentration REAL,
-  co2_uptake REAL,
-  FOREIGN KEY (plant_id) REFERENCES plants(plant_id)
-);")
-
-# 4. Load the data into the tables ---------------------------------------------
-dbWriteTable(con, "plants", plants, append = TRUE)
-dbWriteTable(con, "measurements", measurements, append = TRUE)
-
-# 5. Check the database --------------------------------------------------------
-print(dbListTables(con))
-
-for (table in dbListTables(con)) {
-  n <- dbGetQuery(con, paste0("SELECT COUNT(*) AS n FROM ", table, ";"))$n
-  cat(table, ":", n, "rows\n")
-}
-
-# The number of rows that break a relationship between tables (this should be 0)
-broken <- dbGetQuery(con, "PRAGMA foreign_key_check;")
-cat("Rows that break a relationship:", nrow(broken), "\n")
-
-# A query that uses both tables, to prove the relationship works
-print(dbGetQuery(con, "
-  SELECT plants.treatment, AVG(measurements.co2_uptake) AS mean_uptake
-  FROM measurements
-  JOIN plants ON measurements.plant_id = plants.plant_id
-  GROUP BY plants.treatment;
-"))
-
-dbDisconnect(con)
-```
-
-It should print the table names, `measurements : 84 rows`, `plants : 12 rows`, `Rows that break a relationship: 0`, and a small table of mean uptake for each treatment.
-
-Two lines are new compared with Chapter 7. `PRAGMA foreign_keys = ON` tells SQLite to actually enforce the relationships between your tables. It only does so if you ask, every time you connect, and without it a table could point to a row that doesn't exist. `unlink(db_path)` deletes any old copy of the database before building a new one, so you can run the script as many times as you like without a "table already exists" error.
-
-To adapt it to your project:
-
-- **Create your tables.** Replace the two `CREATE TABLE` statements with one for each table in your design. For each column, choose a data type from this table:
+- **Create your tables.** Use `CREATE TABLE` statements for each table in your design. For each column, choose a data type from this table:
 
 | Kind of data | Type to use |
 |--------------|-------------|
@@ -997,34 +753,15 @@ To adapt it to your project:
 - **Add your rules.** `PRIMARY KEY` goes on the column that uniquely identifies each row. `NOT NULL` goes on any column that must always have a value. A `FOREIGN KEY (column) REFERENCES other_table(column)` line goes in each table that points to another one. Create the tables that others point to first.
 - **Choose a permanent location.** Change `db_path` to `"data/processed/final-project.sqlite"`. Keep the `unlink()`, `dbConnect()`, and `PRAGMA` lines as they are.
 - **Load your tables.** Write one `dbWriteTable(con, "table_name", data_frame, append = TRUE)` line for each table, loading the tables that others point to first. The column names in each data frame must match the column names in its table. The order of the columns doesn't matter.
-- **Check your database.** Keep the first three checks, and replace the final query with one of your own that uses your tables and moves you toward one of your exploratory questions from Week 1 (Chapter 6 shows how).
-- **Commit and push.** A SQLite file is a build product, like the website in Chapter 9: your script recreates it from your raw data whenever it's needed, so it doesn't need its own tracked history (Chapter 2). Open your project's `.gitignore` file in RStudio (the Files pane lists it, or see Chapter 2 for showing hidden files), add a new line containing `*.sqlite`, and save it. Then commit and push your script as in step 8. `git status` should list the script and no `.sqlite` file.
+- **Commit and push.** 
 
-Track B has its own error messages, because SQLite is strict about your rules:
+### For both tracks:
 
-- **`unable to open database file`.** The folder in `db_path` doesn't exist. Create `data/processed`, or check that R is working in your project folder.
-- **`UNIQUE constraint failed: table.column`.** Two rows have the same value in a key column. Apply `unique()` to the right columns, as in Track A.
-- **`FOREIGN KEY constraint failed`.** Either a table that points to another was loaded before it, or a row refers to an ID that doesn't exist in the other table. Load the other table first, and check for typos in the IDs.
-- **`NOT NULL constraint failed: table.column`.** A column marked `NOT NULL` has missing values. Fix the data, or remove `NOT NULL` from that column if values may truly be missing.
-- **`Columns ... not found`.** A column name in your data frame doesn't match any column in the table. Compare `names(your_data_frame)` with your `CREATE TABLE` statement.
-- **`table ... already exists`.** An earlier run stopped partway and left its connection open. Run `dbDisconnect(con)`, then run the script again.
+Update your **README** file (or create one if you haven't already) in your repo that provides the metadata for your table(s). 
+Metadata should include: author information, a brief description of how the data were collected, file names, and full descriptions of column names within each file (with measurement units and notes indicating primary or foreign keys if relevant).  Save your README as a .txt or .md file.  
 
 ### What to submit
 
 Submit the following:
 
-1. The link to your final project repository on GitHub, with `scripts/01-build-database.R` pushed, and the track you used (A or B).
-2. A document (PDF, Word, or a rendered RMarkdown file) containing the output your script prints, copied from the Console: the number of rows in each table, the check results, and the result of your own summary or query.
-3. A short paragraph (3 to 5 sentences) describing how your tables differ from your Week 6 design, if they do, and what you changed and why. If they don't, describe one thing you had to figure out while building them.
-
-<!--
-INSTRUCTOR NOTES (not visible in rendered output)
-
-To check a submission, clone the student's repository, set the working directory in R to the cloned folder with setwd, and run source("scripts/01-build-database.R"). It should finish without errors and print the number of rows in each table, the results of the integrity checks, and the result of the student's own summary or query. Run it a second time to confirm the output is the same. Track A leaves one CSV file per table in data/processed, which are committed. Track B builds a SQLite file in data/processed, which is ignored by Git, so it appears only after the script is run.
-
-Things to look for in both tracks: the script uses relative paths and contains no setwd call; the raw data is unedited; every table has a key; the checks report 0 duplicated keys and 0 rows pointing to a missing parent row; the row counts make sense given the raw data; the final summary uses the student's own tables.
-Track A: the CSV files are written with row.names = FALSE, dates are written as YYYY-MM-DD, and the checks read the saved files back rather than the objects in memory.
-Track B: PRAGMA foreign_keys is turned on; parent tables are created and loaded before the tables that point to them; the script starts from nothing (unlink on the database path) so it can be rerun.
-
-Single table designs are acceptable if justified in Week 6. They should still save one CSV file (or build one table) and run the same checks.
--->
+The link to your final project repository on GitHub, and the track you used (A or B).
