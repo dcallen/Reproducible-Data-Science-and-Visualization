@@ -733,7 +733,7 @@ co2$Treatment <- as.character(co2$Treatment)
 plants <- unique(co2[, c("Plant", "Type", "Treatment")])
 names(plants) <- c("plant_id", "origin", "treatment")
 
-# Table 2: measurements. One row per measurement, with a serial number as its key.
+# Table 2: measurements. One row per measurement, with a unique identifier (measurement_id) as its key.
 measurements <- co2[, c("Plant", "conc", "uptake")]
 names(measurements) <- c("plant_id", "co2_concentration", "co2_uptake")
 measurements$measurement_id <- 1:nrow(measurements)
