@@ -617,16 +617,32 @@ without building the database itself yet.
 
 ### What to do
 
-**1. Revisit your dataset.**
+**1. Revisit your raw data.**
 
 Go back to your Week 1 proposal: your dataset, your rationale, and your
 exploratory questions. Keep these in mind as you design, since your
 table structure should support the questions you actually want to ask.
 
-**2. Decide how many tables you need.**
+Consider how you received your data. Did you collect all your data yourself? 
+If so, maybe you already entered your data in a tidy format. But it's ok if you
+didn't, because now you know how to do that for your next project. And if you 
+are using data that someone else collected, they might not have given you
+tidy data either. Finally, sometimes we use data from different sources. We 
+may collect biological data ourselves or with a research group, but we may then
+obtain additional data from other public sources. Long term climate data, land cover
+land use data, hydrologic data, and other similar data are common data sources
+in ecosystem science used to supplement what you actually collected. And some of 
+that supplemental data you obtain may not be tidy.
 
-Using the principles from Chapter 5, work through whether your data
-belongs in one table or several:
+All these raw files will go in your data/raw subfolder, and part of your work for the
+final project will be process all these different data sources and make them
+tidy so that all the datasets can talk to each other, and save them in your
+data/processed subfolder.
+
+**2. Decide how many processed data tables you need.**
+
+Your processed data tables will the ones you actually use to analyze and visualize your data. 
+Using the principles from Chapter 5, work through whether your data belongs in one table or several:
 
 - What is the sampling unit (or units) in your data? A single
   consistent unit usually means a single table is enough. Multiple
@@ -646,15 +662,16 @@ your data actually calls for. What matters is that you can justify the
 decision using these principles, not that you force complexity your
 project doesn't need.
 
-**3. Map out each table.**
+**3. Map out each raw and processed data table.**
 
 For every table your design requires, write out:
 
 - The table name
 - Every column header, with its data type (text, integer, float, date,
   boolean)
-- Which column is the primary key
-- Any foreign keys, and which table and column each one references
+- Which column is the primary key (if present, your raw data may not have them yet)
+- Any foreign keys, and which table and column each one references (if present, 
+your raw data may not have them yet)
 
 **4. If you have more than one table, explain the relationships.**
 
@@ -662,13 +679,14 @@ For each pair of related tables, state whether the relationship is one
 to many or many to many, and briefly explain why. If it's many to many,
 identify the junction table that handles it.
 
-**5. Draw a diagram.**
+**5. Draw a diagram that visualizes these relationships.**
 
 Using PowerPoint, Google Slides, or a similar tool, draw a diagram of
 your table structure, following the same style as the diagrams in
 Chapters 5 through 7:
 
 - One box (or text box) per table, with the table name at the top.
+- Note if you the table is "raw" or "processed" data
 - List every column inside its box, and mark the primary key (e.g.,
   underline it, or add "(PK)" next to it) and any foreign keys (add
   "(FK)" next to them).
@@ -697,9 +715,8 @@ containing:
 
 ## Week 7: Build Your Final Project Database
 
-Last week, you designed the tables your final project needs. This week, you'll build them. As Chapter 5 explained, a database is a set of related tables, and you don't need SQL to have one. You'll write one R script that reads your raw data, splits it into the tables in your design, saves each table as a CSV file, and checks the result. Because the whole process lives in a script, anyone can rebuild your tables from your raw data by running it again, including you, a month from now. That is what makes them reproducible.
-
-There are two tracks. **Track A** saves your tables as CSV files, and it's what most of you will probably do. **Track B** is optional: it builds a SQLite database instead, as in Chapters 6 and 7, which is worth choosing if you want to query your data with SQL, or if your design has several linked tables and you want the database to enforce the links. Both tracks start the same way and check the same things. Everything in the numbered steps below is Track A, and Track B has its own section after them.
+Last week, you designed the tables your final project needs. This week, you'll build them. As Chapter 5 explained, a database is a set of related tables, and you don't need SQL to have one. For your project, it 
+is likely far easier to use use a set of related .csv files, so that is what use instead.
 
 ### Before you start
 
@@ -707,61 +724,17 @@ You'll need:
 
 - Your Week 6 table map and diagram.
 - Your final project repository from Weeks 2 and 3, on your computer, with your raw data file or files saved in `data/raw/` and left unedited (Chapter 1: never edit raw data by hand).
-- For Track B only, the `DBI` and `RSQLite` packages, which you installed in Chapter 6.
 
-This assignment expects your raw data to be CSV files, which is what most public data portals provide. If yours are Excel files, save a CSV copy of each sheet you need into `data/raw/` and keep the originals too.
-
-### Track A: 
+Your raw data should be saved as CSV files, which is what most public data portals provide. If yours are Excel files, save a CSV copy of each sheet you need into `data/raw/` and keep the original Excel files too.
 
 **1. Save your tables in the data/raw folder in your repo.**
 
-Make sure you save your data as .csv files, that file names are computer readable, that all column names within each file are computer readable, that your data are tidy, that you have primary keys in each table, foreign keys in each table if you have multiple tables, and that all your file and column names follow the conventions you set in your week 6 assignment.
+Make sure you save your data as .csv files, that file names are computer readable, that all column names within each file are computer readable, and that all your file and column names follow the conventions you set in your week 6 assignment. At this point, its ok if your raw data isn't tidy, and if they don't have primary keys and foreign keys yet.  We can add those to the processed data later.
 
 **2. Commit and push.**
 
 Your processed CSV files are plain text, they're small, and they let anyone see your tables on GitHub without running anything, so commit them. (If one of your files is very large, tens of megabytes, add it to `.gitignore` and tell the instructor.) 
 
-### If something goes wrong
-
-Most mistakes show up as a short R message. The ones you're most likely to see:
-
-- **`cannot open file 'data/raw/...': No such file or directory`.** R isn't working in your project folder, or the file name is wrong. Run `getwd()` to check where R is, and `setwd()` to move it.
-- **`cannot open file 'data/processed/...': No such file or directory`.** The `data/processed` folder doesn't exist, or R isn't working in your project folder. Make sure the `dir.create()` line comes before your `write.csv()` lines.
-- **`names do not match previous names`.** You are stacking several files, and one of them names its columns differently from the others. See step 3.
-- **`undefined columns selected`.** A column name inside `raw[, c(...)]` doesn't match any column in `raw`. Compare it with `names(raw)`, and remember that spaces became dots.
-- **`object '...' not found`.** A name is misspelled, or you skipped the line that creates it. Run the script from the top.
-
-Your checks print numbers rather than errors, so a problem shows up as a count that isn't 0:
-
-- **Duplicated keys.** The table needs `unique()` applied to the right columns. If the same ID has different details on different rows, your raw data has an inconsistency to resolve first.
-- **Rows whose key doesn't exist in the other table.** The two tables were built from different values, or an ID has a typo or an extra space. Compare the IDs in the two tables.
-
-### Optional Track B: build a SQLite database
-
-Choose this track if you'd like to query your tables with SQL, as in Chapter 6, or if you want the database itself to refuse rows that break a relationship between tables. 
-
-- **Create your tables.** Use `CREATE TABLE` statements for each table in your design. For each column, choose a data type from this table:
-
-| Kind of data | Type to use |
-|--------------|-------------|
-| Text, categories, and IDs that contain letters | `TEXT` |
-| Whole numbers, such as counts and years | `INTEGER` |
-| Numbers with decimals, such as measurements | `REAL` |
-| Dates and times | `TEXT`, written as `YYYY-MM-DD` or `YYYY-MM-DD HH:MM:SS` |
-| TRUE and FALSE | `INTEGER`, using `1` and `0` |
-
-- **Add your rules.** `PRIMARY KEY` goes on the column that uniquely identifies each row. `NOT NULL` goes on any column that must always have a value. A `FOREIGN KEY (column) REFERENCES other_table(column)` line goes in each table that points to another one. Create the tables that others point to first.
-- **Choose a permanent location.** Change `db_path` to `"data/processed/final-project.sqlite"`. Keep the `unlink()`, `dbConnect()`, and `PRAGMA` lines as they are.
-- **Load your tables.** Write one `dbWriteTable(con, "table_name", data_frame, append = TRUE)` line for each table, loading the tables that others point to first. The column names in each data frame must match the column names in its table. The order of the columns doesn't matter.
-- **Commit and push.** 
-
-### For both tracks:
-
-Update your **README** file (or create one if you haven't already) in your repo that provides the metadata for your table(s). 
-Metadata should include: author information, a brief description of how the data were collected, file names, and full descriptions of column names within each file (with measurement units and notes indicating primary or foreign keys if relevant).  Save your README as a .txt or .md file.  
-
 ### What to submit
 
-Submit the following:
-
-The link to your final project repository on GitHub, and the track you used (A or B).
+Submit the link to your final project repository on GitHub.
