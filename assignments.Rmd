@@ -738,3 +738,240 @@ Your processed CSV files are plain text, they're small, and they let anyone see 
 ### What to submit
 
 Submit the link to your final project repository on GitHub.
+
+## Week 8: Describe Your Final Project in RMarkdown
+
+This week, you'll write the first draft of the RMarkdown document that will become your final project report. It won't have any data wrangling or visualization code yet, because we haven't covered those. But it will have everything that doesn't depend on them: the front matter, an overview of your project, its folder structure, and a description of every raw data file you have so far. You'll keep adding to this same file for the rest of the semester, so it's worth getting the foundations right now.
+
+### Before you start
+
+You'll need:
+
+- Your final project repository from Weeks 2 and 3, with your raw data file or files saved in `data/raw/`.
+- Your Week 1 proposal: your description of the dataset, your rationale, and your exploratory questions. You'll reuse most of that text.
+- For each raw data file, where it came from: a URL or DOI, the date you downloaded it, and its license or terms of use. If you don't remember these, look them up now. Every raw file needs them.
+
+### What to do
+
+**1. Create the document.**
+
+In RStudio, go to **File > New File > R Markdown...**, choose **Document** and **HTML**, give it a title and your name, and click **OK**. Then save it as `final-project.Rmd` in the top-level folder of your project, the one that holds `data` and `scripts`, and not inside either of them. The location matters. When you knit a document, R works from the folder the `.Rmd` file is in (Chapter 8), so with the file at the top level, paths like `data/raw/my-file.csv` work.
+
+**2. Replace the starter content with the template.**
+
+Select everything in the file (Ctrl+A on Windows, Cmd+A on a Mac), delete it, and paste in the following template. Don't knit yet. The italic text marks the places you need to change, and by the time you submit, none of it should be left.
+
+<pre><code>---
+title: "Your Project Title"
+author: "Your Name"
+date: "&#96;r Sys.Date()&#96;"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+---
+
+&#96;&#96;&#96;{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+&#96;&#96;&#96;
+
+# Overview
+
+*Replace this paragraph with a short summary of your project: what you are studying, which data you are using, and what you hope to learn.*
+
+# Research Questions
+
+*Replace this list with the exploratory questions from your Week 1 proposal. You can sharpen them now that you know your data better.*
+
+1. *Your first question.*
+2. *Your second question.*
+3. *Your third question (optional).*
+
+# Rationale
+
+*Replace this paragraph with your 3 to 5 sentence explanation, from Week 1, of why this dataset interests you and what you hope to learn from it.*
+
+# Project Organization
+
+*Replace the example below with the actual folder structure of your project, then replace the table with a description of each of your folders and files.*
+
+&#96;&#96;&#96;
+final-project/
+├── final-project.Rmd
+├── README.md
+├── data/
+│   ├── raw/
+│   └── processed/
+├── scripts/
+└── output/
+    └── figures/
+    └── tables/
+&#96;&#96;&#96;
+
+| Folder or file | What it holds |
+|----------------|---------------|
+| &#96;final-project.Rmd&#96; | This report. |
+| &#96;README.md&#96; | A short description of the project. |
+| &#96;data/raw/&#96; | The original data files, exactly as downloaded. These are never edited. |
+| &#96;data/processed/&#96; | Cleaned data, and the tables built by the scripts. |
+| &#96;scripts/&#96; | The R scripts that process the data. |
+| &#96;output/figures/&#96; | Figures produced by the scripts. |
+| &#96;output/tables/&#96; | Tables produced by the scripts. |
+
+The project is stored in a GitHub repository: &lt;https://github.com/your-username/your-repository&gt;
+
+# Raw Data
+
+*Replace this paragraph with a sentence or two about your data overall: how many files you have, and where they came from.*
+
+These are the files currently in &#96;data/raw/&#96;:
+
+&#96;&#96;&#96;{r raw-file-list}
+raw_files &lt;- list.files("data/raw", full.names = TRUE)
+knitr::kable(data.frame(file = basename(raw_files),
+                        size_kb = round(file.size(raw_files) / 1024, 1)))
+&#96;&#96;&#96;
+
+## File 1: your-file-name.csv
+
+- **Source:** *Who produced the data, such as an agency, a repository, or a published study.*
+- **Link:** *A URL or DOI where the data can be found.*
+- **Date accessed:** *The date you downloaded it.*
+- **License or terms of use:** *For example, public domain or CC BY 4.0.*
+- **Citation:** *How to cite the data.*
+
+*Replace this paragraph with a description of the file: how the data were collected, what time period and place they cover, and what a single row represents.*
+
+&#96;&#96;&#96;{r read-file-1}
+file1 &lt;- read.csv("data/raw/your-file-name.csv", stringsAsFactors = FALSE, na.strings = "")
+&#96;&#96;&#96;
+
+This file has &#96;r nrow(file1)&#96; rows and &#96;r ncol(file1)&#96; columns. Here are the first few rows:
+
+&#96;&#96;&#96;{r head-file-1}
+knitr::kable(head(file1))
+&#96;&#96;&#96;
+
+And here is the type of each column, as R reads it:
+
+&#96;&#96;&#96;{r str-file-1}
+str(file1)
+&#96;&#96;&#96;
+
+### Data dictionary for file 1
+
+| Variable | Description | Type | Units |
+|----------|-------------|------|-------|
+| &#96;column_name_1&#96; | *What it measures.* | *Text, whole number, decimal, or date.* | *For example, mg/L, or none.* |
+| &#96;column_name_2&#96; | *What it measures.* | *Text, whole number, decimal, or date.* | *For example, mg/L, or none.* |
+
+# Planned Workflow
+
+*Replace each paragraph below with 2 or 3 sentences about what you plan to do. You'll write the code in later weeks.*
+
+## Data cleaning
+
+*Describe the cleaning you expect to need, based on what you saw in your raw files above.*
+
+## Visualization
+
+*Describe the figures you expect to make, and which of your questions each one will help answer.*
+
+## Analysis
+
+*Describe how you expect to answer your research questions with these data.*
+
+# References
+
+*List the full citation of each data source, in the same style for each.*
+
+# Session Information
+
+&#96;&#96;&#96;{r session-info}
+sessionInfo()
+&#96;&#96;&#96;</code></pre>
+
+The template has the parts you learned in Chapter 8: a YAML header, a setup chunk, headers, a table, code chunks, and inline code. A few things in it are worth knowing before you start:
+
+- The date in the header is inline code that fills in today's date each time you knit, so you never have to update it.
+- The `setup` chunk at the top has `include=FALSE`, so it doesn't appear in your knitted document. It tells every other chunk to show its code along with its output.
+- The `raw-file-list` chunk lists whatever is in `data/raw/` each time you knit, so the list can never be out of date. There is nothing in it to edit.
+- `knitr::kable()` turns a data frame into a formatted table.
+
+**3. Fill in the front matter and the introduction.**
+
+In the YAML header, replace the title and the author. Then replace the italic text in the Overview, Research Questions, and Rationale sections. Most of this comes from your Week 1 proposal, which you're welcome to improve now that you know your data better.
+
+**4. Describe your project organization.**
+
+Replace the example folder tree with the real structure of your project folder as it is on your computer right now, including the script from Week 7 if you've written it. Then replace the table with a description of each of your folders and files, and add the link to your GitHub repository.
+
+**5. Present your raw data files.**
+
+Do this for each file in `data/raw/`. Start with the "File 1" subsection of the template:
+
+1. Change the heading to your file's name, and fill in the five source details: source, link, date accessed, license, and citation.
+2. Replace the italic paragraph with a description of the file: how the data were collected, what time period and place they cover, and what one row represents.
+3. In the first chunk, replace `your-file-name.csv` with your file's name. You can also give the data frame a more meaningful name than `file1`, but if you do, change it everywhere it appears in this subsection, including in the two pieces of inline code.
+4. Fill in the data dictionary with one row for each variable (column) in the file, using the exact column names from the file. If a file has more than about 20 variables, document the 10 most important ones and say that you did.
+
+For each additional file, copy everything from the `## File 1` heading down to the end of its data dictionary, paste it below, and make the same changes. Each copy needs its own data frame name (for example `file2`) and its own chunk labels (for example `read-file-2`, `head-file-2`, and `str-file-2`). Two chunks can't share a label.
+
+Two special cases:
+
+- If a raw file isn't a CSV (an Excel workbook, for example), still describe it in the same way, but leave out the chunks that read it. You'll learn to read other formats later in the course.
+- If your data came as several files with identical columns (one per year, for example), you can describe them together in one subsection. Say what the files have in common and how they differ, and read just one of them as an example.
+
+**6. Describe your planned workflow.**
+
+Under Data cleaning, Visualization, and Analysis, write 2 or 3 sentences about what you plan to do. For the cleaning, use what you noticed in your raw files above, and your notes from Week 1 on the cleaning you anticipated. You'll write the code in later weeks. Then fill in the References section with the citation for each data source.
+
+**7. Knit and check.**
+
+Click **Knit** at the top of the editor. Fix any errors (see below), then read through the HTML document that opens, and check that:
+
+- the table of contents is on the left, and the date is today's date;
+- the file list shows every file in `data/raw/`;
+- every raw file has its source details, description, first few rows, column types, and data dictionary;
+- the numbers of rows and columns in the text match what you expect;
+- no italic placeholder text is left anywhere.
+
+**8. Commit and push.**
+
+In a terminal inside your project folder, run the following. The knitted `.html` file is regenerated every time you knit, so you don't need to commit it, but it does no harm if you do.
+
+```
+git add .
+git commit -m "Add first draft of final project report"
+git push
+```
+
+Then open your repository on GitHub and confirm that `final-project.Rmd` is there.
+
+### If something goes wrong
+
+When knitting fails, R tells you where. Look for the words `Quitting from` followed by the line numbers and the label of the chunk that failed. The most likely problems:
+
+- **`cannot open the connection`, with a warning that says `cannot open file 'data/raw/...': No such file or directory`.** The file name in your `read.csv()` line is still the placeholder, or has a typo (capital letters matter), or `final-project.Rmd` isn't in the top-level folder of your project.
+- **`Duplicate chunk label 'read-file-1'`.** You copied a file's subsection without changing its chunk labels. Give every chunk its own label.
+- **`object 'file1' not found`.** You renamed the data frame in one place but not in the others. Look at the chunks and the inline code below the one that reads the file.
+- **`Scanner error: mapping values are not allowed in this context`.** There is a mistake in the YAML header at the top. Check that each indented line is indented with spaces (never tabs) and lines up like the template.
+- **A table appears as plain text with `|` characters.** A table needs a blank line before it, and a line of dashes under its header row.
+
+### What to submit
+
+Submit the following:
+
+1. The link to your final project repository on GitHub, with `final-project.Rmd` pushed.
+2. Your knitted HTML file, `final-project.html`, uploaded to Canvas.
+
+<!--
+INSTRUCTOR NOTES (not visible in rendered output)
+
+This file is the start of the report students keep building for the rest of the semester, so check the foundations. In the knitted HTML: the YAML header gives a title, an author, and a date, and a table of contents; the Overview, Research Questions, and Rationale are written in the student's own words; the folder tree and its table match the project; every file in data/raw is listed and described with its source, link, date accessed, license, and citation; each CSV has its row and column counts, a preview, its column types, and a data dictionary; the planned workflow sections say something specific to the dataset; and no italic placeholder text is left.
+
+A quick way to catch leftovers is to search the Rmd for the words Replace, your-file-name, column_name, and your-username.
+
+Non-CSV raw files are described but not read. Several files with identical columns may be described together.
+-->
+
