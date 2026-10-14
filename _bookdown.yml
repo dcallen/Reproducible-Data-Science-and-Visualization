@@ -12,6 +12,7 @@ rmd_files: [
   "07-rsqlite.Rmd",
   "08-rmarkdown.Rmd",
   "09-github-ebook.Rmd",
+  "10-lab-website.Rmd",
   "assignments.Rmd"
 ]
 new_session: yes
