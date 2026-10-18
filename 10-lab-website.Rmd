@@ -295,34 +295,6 @@ The template comes with sample data that you need to replace. `_data/orcid.yaml`
 
 5. Wait a few minutes. The cite process runs first, and then the site rebuilds. The Research page should now list your two papers, and the highlighted one at the top. You'll also see a new commit from a bot called "Update citations" in your repository's history. Open `_data/citations.yaml` to see what Manubot generated (look, but don't edit!).
 
-## Blog posts
-
-Each blog post is a Markdown file in the `_posts` folder. The file name has to follow the pattern `YYYY-MM-DD-title-of-the-post.md`, because Jekyll uses it for the post's date and address. The front matter holds details such as:
-
-- `title` is the title of the post.
-- `author` is the file name of the author's page in `_members`, without the `.md`. If it matches, the author's portrait appears on the post automatically. If it doesn't, the text is just displayed as written.
-- `image` is a thumbnail for the post.
-- `tags` is a list of topics, which the Blog page lets visitors filter by.
-
-By default, Jekyll leaves out posts dated in the future. If a new post doesn't show up, check its date first.
-
-**Try it now:** Write your lab's first blog post. Go to **Add file**, then **Create new file**, type `_posts/2026-10-05-welcome-to-the-lab.md` as the name, and paste in the following:
-
-```markdown
----
-title: Welcome to the Rivera Lab website
-image: images/photo.jpg
-author: alex-rivera
-tags: news, lab life
----
-
-Welcome! This site was built from a template, and every change we make to it is tracked in Git.
-
-We'll use this blog to share news about our projects and publications.
-```
-
-Commit directly to `main`. After a few minutes, your new post should appear on the Blog page, with Alex's portrait on it.
-
 ## Making it yours
 
 You now have a working site, but it's still full of the template's placeholder content. Before you share the address with anyone, go through this checklist:
@@ -370,86 +342,11 @@ Finally, many of this template's features depend on GitHub Actions, which very o
 
 The template can do much more than this chapter covers. The documentation describes how to change your site's colors and fonts, use your own logo, build fancier layouts with components such as cards, figures, and grids, add a custom domain, and update your copy of the template when new versions come out. Its gallery shows what other labs have built, which is a good place to look for ideas. You'll find all of it at <https://greene-lab.gitbook.io/lab-website-template-docs>.
 
-## In-Class Activity: Join the Lab
-
-In this activity, you'll work in pairs on one partner's site, to practice the collaboration workflow you learned in Chapter 3 with the template's pull request previews. You'll also practice recognizing a failed check, and fixing it. The **owner** is the partner whose site you'll use (it should be live, as in the "Creating your site" section). The other partner is the **collaborator**.
-
-### Part 1: Set up the collaboration
-
-1. **Owner:** In your repository, go to **Settings**, then **Collaborators**, then **Add people**. Enter your partner's GitHub username and send the invitation. (Chapter 3 shows these steps in detail.)
-2. **Collaborator:** Accept the invitation. You'll find it in your email, or in your GitHub notifications.
-
-### Part 2: A pull request that adds a team member
-
-1. **Collaborator:** Open the owner's repository on GitHub. Go to **Add file**, then **Create new file**. Type `_members/sam-okafor.md` as the name, and paste in the following:
-
-```markdown
----
-name: Sam Okafor
-image: images/photo.jpg
-role: phd
-affiliation: Example University
-aliases:
-  - S. Okafor
-links:
-  email: contact@example.com
----
-
-Sam is a PhD student in the Rivera Lab. Sam's project uses time series data to study how wetlands respond to drought.
-```
-
-2. **Collaborator:** Click **Commit changes...**. Choose **Create a new branch for this commit and start a pull request**, name the branch `add-sam-okafor`, and click **Propose changes**. Then click **Create pull request**.
-3. **Collaborator:** Wait for the checks to finish, then open the preview link in the bot's comment. Click through to the Team page and confirm that Sam appears.
-4. **Owner:** Open the pull request. Go to the **Files changed** tab, click **Review changes**, choose **Approve**, and click **Submit review**.
-5. **Owner:** Go back to the **Conversation** tab, click **Merge pull request**, then **Confirm merge**, then **Delete branch**.
-6. **Both:** After a few minutes, refresh the live Team page and confirm that Sam appears.
-
-**Question 1.** On the Team page, Sam's card shows a graduation cap icon and the words "PhD Student", but Sam's file never says "PhD Student". Which line in Sam's file causes this, and which file in the repository defines what it produces?
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-The line "role: phd" in Sam's file. The role has to match a key in the file _data/types.yaml, which defines the phd role with a graduation cap icon and the default description "PhD Student". Because Sam's file has no description line of its own, the default text from the role is displayed.
--->
-
-### Part 3: Break it, then fix it
-
-1. **Collaborator:** In the owner's repository, open `_data/sources.yaml` and click the pencil icon. Click in the editor, press Ctrl+End (Cmd+Down arrow on a Mac) to jump to the end of the file, press Enter twice, and paste in the following. The identifier is deliberately wrong:
-
-```yaml
-- id: doi:10.1371/journal.pcbi.NOTREAL
-  type: paper
-```
-
-2. **Collaborator:** Click **Commit changes...**. Choose **Create a new branch for this commit and start a pull request**, name the branch `add-bad-source`, click **Propose changes**, and then click **Create pull request**.
-3. **Collaborator:** Wait for the checks. At least one will fail, with a red X. Click **Details** next to the failed check, open the failed job, expand the failed step, and read the end of its log. No preview link will appear this time.
-4. **Collaborator:** Fix the problem on the same branch. On the pull request page, click the branch name (`add-bad-source`) near the top. Open `_data/sources.yaml`, click the pencil icon, delete the two lines you added, and click **Commit changes...**, committing directly to the `add-bad-source` branch.
-5. **Collaborator:** Go back to the pull request and wait for the checks to run again. They should pass, and the preview link should appear.
-6. **Collaborator:** The pull request now has no changes to merge, so close it. Click **Close pull request**, then **Delete branch**.
-
-**Question 2.** Which job failed, and which lines of its log told you what was wrong? Why didn't a preview link appear?
-
-**Question 3.** What would have happened if you had committed the bad line directly to `main` instead of using a pull request?
-
-<!--
-ANSWER KEY (not visible in rendered output)
-
-Question 2: The update-citations job failed, in its step that builds the updated citations. Its log shows error lines saying that Manubot could not generate a citation for the source doi:10.1371/journal.pcbi.NOTREAL, and ends with a line saying that 1 error occurred. The preview is built by a job that depends on the citations job succeeding, so when the citations job failed, the preview job was skipped and no preview link was posted.
-
-Question 3: The On push to main workflow would have failed at the same step, and because the site build depends on it, the live site would not have been rebuilt. Visitors would still see the previous version. But the bad line would now be on main, and every later push would fail in the same way until someone fixed it. Using a pull request caught the mistake before it reached main.
--->
-
-### Part 4: Take it home
-
-Before you share a real lab site with anyone, go through the "Making it yours" checklist above. Replace the sample content with real information, and keep going until none of the template's placeholder content is left.
-
-### What to submit
+### What to submit for today
 
 Submit the following:
 
-1. The address of the owner's live site.
-2. The address of the pull request from Part 2.
-3. Your written answers to Questions 1, 2, and 3 (two or three sentences each).
+1. The address of your Rivera Lab website that you worked on today during class.
 
 ## References
 

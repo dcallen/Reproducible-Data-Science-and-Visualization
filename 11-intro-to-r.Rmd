@@ -1,0 +1,11 @@
+# Introduction to R
+
+We are going to use an existing lesson to introduce you to R. Rather than write new material, we'll use the Data Carpentry lesson [Data Analysis and Visualization in R for Ecologists](https://datacarpentry.github.io/R-ecology-lesson/), which was designed for people with no programming experience. It uses ecological data and takes about 6 hours to work through. It covers the R language and RStudio, visualizing data with `ggplot2`, exploring and cleaning data frames, and selecting, filtering, and transforming data.
+
+The lesson is here:
+
+<https://datacarpentry.github.io/R-ecology-lesson/>
+
+Start with the **Summary and Setup** page, which is the first page at that link. It shows you how to install the packages the lesson uses (`tidyverse` and `ratdat`) and how to get its data.
+
+The lesson's materials are licensed CC BY 4.0 by their authors.
