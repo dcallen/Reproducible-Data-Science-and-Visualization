@@ -975,3 +975,162 @@ A quick way to catch leftovers is to search the Rmd for the words Replace, your-
 Non-CSV raw files are described but not read. Several files with identical columns may be described together.
 -->
 
+## Week 9: Publish Your Final Project Report with GitHub Pages
+
+Last week, you wrote the first draft of your final project report as an RMarkdown file. This week, you'll publish it as a website, so that anyone with a link can read it. You'll do it the way Chapter 9 did: instead of knitting the report yourself and uploading the result, you'll set up a GitHub Actions workflow that knits `final-project.Rmd` for you every time you push a change, and publishes the result with GitHub Pages. From then on, your website always matches your repository, and it will keep updating as you add data cleaning and visualization over the coming weeks.
+
+### Before you start
+
+You'll need:
+
+- Your final project repository, with `final-project.Rmd` saved in its top-level folder and pushed to GitHub (Week 8).
+- A report that knits without errors on your own computer. If it doesn't, fix that first, because it won't knit on GitHub either.
+
+### What to do
+
+**1. Check that GitHub has everything your report needs.**
+
+The workflow runs on a fresh computer that can only see the files in your repository. Open your repository on GitHub, and confirm that:
+
+- `final-project.Rmd` is at the top level, and
+- the `data/raw/` folder is there, with every raw data file that your report reads.
+
+If a raw data file is missing, Git may be ignoring it. In a terminal inside your project folder, run the following (with your file's name), which prints the line of `.gitignore` responsible. Fix that line, then `git add`, commit, and push the file.
+
+```
+git check-ignore -v data/raw/my-file.csv
+```
+
+Next, look beside your repository's name. It says **Public** or **Private**. GitHub Pages needs a public repository on a free account. If yours says Private, go to **Settings**, scroll to the **Danger Zone** at the bottom, and choose to change the repository's visibility to public. Everything in the repository becomes public, which is fine for a project built on a public dataset.
+
+**2. Add the workflow file.**
+
+On your repository's page on GitHub, click **Add file**, then **Create new file**. In the box for the file name, type `.github/workflows/publish.yml`. (Typing each slash starts a new folder, so after you type `.github/` you'll see it turn into a folder.) Paste the following into the large text box, and click **Commit changes...**, then **Commit changes** again to save it directly to the `main` branch.
+
+```yaml
+name: Render and deploy report
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install R package dependencies
+        run: |
+          install.packages(c("rmarkdown", "knitr"))
+        shell: Rscript {0}
+
+      - name: Render report
+        run: |
+          rmarkdown::render("final-project.Rmd", output_file = "index.html", output_dir = "docs")
+        shell: Rscript {0}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+```
+
+This is the same workflow as in Chapter 9, with two differences. It renders your single report with `rmarkdown::render()` instead of building a whole book, and it saves the result as `docs/index.html`, which is what a website's front page is called. It also names `ubuntu-24.04` rather than `ubuntu-latest`. GitHub is gradually moving `ubuntu-latest` to a newer version of Ubuntu until November 19, and naming a version keeps your build on the one this assignment was tested on.
+
+The moment you save the file, the workflow starts. Its `deploy` job will fail, which is expected, and the next step fixes it.
+
+**3. Turn on GitHub Pages.**
+
+Go to **Settings**, then **Pages**. Under **Build and deployment**, set **Source** to **GitHub Actions**. Then go to the **Actions** tab, click the run that has the red X, click **Re-run jobs** at the top right, and choose **Re-run failed jobs**. When both jobs show a green check, your site is live. Its address is `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`, using your GitHub username and your repository's name. Open it.
+
+**4. Compare the website with your report.**
+
+Your website should look like the HTML file you get when you knit the report on your own computer: the table of contents, every section, and the data tables. Click through it, and check that no `REPLACE` placeholder text is left.
+
+**5. Bring the workflow file to your computer.**
+
+You created the workflow file on GitHub's website, so your computer doesn't have it yet. In a terminal inside your project folder, run the following. Everything on your computer should be pushed first, so that `git status` says `nothing to commit`. If you skip this step, your next push will be rejected.
+
+```
+git status
+git pull
+```
+
+**6. Add the website address, and watch the site update.**
+
+In `final-project.Rmd`, in the Project Organization section, add this sentence right after the sentence that links to your GitHub repository, using your own username and repository name:
+
+```markdown
+The report is published at <https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/>
+```
+
+Add the same line to your repository's `README.md`. Then save both files, and run the following in your terminal:
+
+```
+git add .
+git commit -m "Add the website address"
+git push
+```
+
+Go to the **Actions** tab and watch the new run. When it finishes, refresh your website, and the new sentence should appear.
+
+**7. Keep it building as you add code.**
+
+Over the coming weeks, you'll add code to your report. The workflow can only use what you've given it, so two things now matter. Every data file your code reads has to be pushed to your repository. And every R package your code uses has to be in the workflow's install line. Right now it installs only `rmarkdown` and `knitr`. When you use another package, such as `tidyverse`, open `.github/workflows/publish.yml` on GitHub, click the pencil icon, and change that line to include it, for example:
+
+```
+install.packages(c("rmarkdown", "knitr", "tidyverse"))
+```
+
+If a build fails, open the failed run, click the job, expand the step with the red X, and read the end of its log, as in Chapter 9's "How to read a failed run."
+
+### If something goes wrong
+
+- **No run appears in the Actions tab, or the tab shows "Get started with GitHub Actions".** GitHub didn't find the workflow file. Open `.github/workflows/publish.yml` in your repository and check that the path is spelled exactly like that. If the workflow is listed but never runs, check that your branch is called `main`, because the workflow only starts when you push to `main`.
+- **`Render report` fails with `cannot open the connection`, with a warning that says `cannot open file 'data/raw/...'`.** The report reads a file that isn't in your repository, or whose name or capital letters don't match. See step 1.
+- **`Render report` fails with `there is no package called '...'`.** Add the package to the install line of the workflow, as in step 7.
+- **`Render report` fails and shows `Quitting from lines ...`.** Those line numbers and the label after them tell you which chunk of `final-project.Rmd` failed.
+- **`deploy` fails with `Failed to create deployment (status: 404)` and `Ensure GitHub Pages has been enabled`.** GitHub Pages isn't switched on yet. Do step 3, then re-run the failed jobs.
+- **`git push` is rejected with `(fetch first)`.** GitHub has a commit that your computer doesn't, probably the workflow file. Run `git pull`, then push again.
+- **The website shows an old version.** Check that the latest run in the **Actions** tab has a green check, wait a minute, and refresh.
+
+### What to submit
+
+Submit the following:
+
+1. The address of your live website.
+2. The link to your final project repository on GitHub.
+
+<!--
+INSTRUCTOR NOTES (not visible in rendered output)
+
+To grade, open the student's website and check that it matches the report from Week 8: the table of contents, the overview and questions, the project organization, every raw data file with its description and data dictionary, and no REPLACE text. Then open the repository and check that .github/workflows/publish.yml is there, that the latest run in the Actions tab is green, and that the website address appears in the report and in the README.
+
+The website is built from final-project.Rmd by the workflow, so the knitted HTML does not need to be committed.
+-->
