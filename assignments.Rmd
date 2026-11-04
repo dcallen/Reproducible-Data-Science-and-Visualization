@@ -1134,3 +1134,376 @@ To grade, open the student's website and check that it matches the report from W
 
 The website is built from final-project.Rmd by the workflow, so the knitted HTML does not need to be committed.
 -->
+
+## Week 10: Coding with an AI Assistant
+
+This week, you'll practice the R you've learned in the first three episodes of the Data Carpentry lesson (introduction to R and RStudio, data visualization with ggplot2, and exploring and understanding data). You'll also practice using an AI assistant to write code, as many scientists now do. The lesson recommends avoiding generative AI while you're learning the basics, because you need those skills to judge what an assistant gives you. This assignment comes after you've done that work yourself, and it's about those skills: asking clearly, checking an answer against the data, understanding every line, and changing it. The assistant writes the first draft. Everything else is your job.
+
+### How the assignment works
+
+You'll hand in one RMarkdown document, and you'll build it up as you work. In step 4 you'll create it from a template with six parts. After that, each step tells you which part to fill in next:
+
+| Step | What you do | Part of your document |
+|------|-------------|-----------------------|
+| 1 to 3 | Look at the data, write your prompt, and get the script from the assistant | None yet. You'll paste these into your document in step 4. |
+| 4 | Paste in your prompt and the assistant's code, and run it | Parts 1 and 2 |
+| 5 | Check the assistant's work | Part 3 |
+| 6 | Explain the code in your own words | Part 4 |
+| 7 | Change the code and predict the result | Part 5 |
+| 8 | Reflect | Part 6 |
+| 9 | Knit the document and submit it | The whole document |
+
+### Ground rules
+
+- Use an AI assistant for Part 2 only: to write the script, and to help with any error messages. You write Parts 3 to 6 yourself, using the lesson, R's help pages (`?`), and web searches.
+- Keep a record. Your document will contain the name of the assistant, the date, your prompt, and every error message you pasted back to it.
+- Be ready to explain any line of your script in class.
+- Any assistant will do, including free ones.
+- The lesson describes real concerns about generative AI: its reliability, its energy and water use, and how its models were trained. You can read them in its [Generative AI Help section](https://datacarpentry.github.io/R-ecology-lesson/how-r-thinks-about-data.html#generative-ai-help). You'll think about them in your reflection.
+
+### Before you start
+
+You'll need:
+
+- Episodes 1 to 3 of the lesson completed, with R, RStudio, and the `tidyverse` and `ratdat` packages installed.
+- An AI assistant to use.
+
+### What to do
+
+**1. Look at the data yourself first.**
+
+An assistant doesn't know your data, so unless you tell it, it will guess. In the RStudio Console, run the following, and read the help page that appears:
+
+```
+library(ratdat)
+names(complete_old)
+?complete_old
+```
+
+**2. Write your prompt.**
+
+An assistant doesn't know your data or your lesson, so your prompt has to tell it everything it needs. Your prompt has four parts:
+
+1. **Who you are and what you're using.** Write this yourself, in a sentence or two. Say that you're learning R, and that you're using the `tidyverse` and `ratdat` packages.
+2. **The data.** Write this yourself. Give the name of the data frame, `complete_old`, and say that it's available as soon as `ratdat` is loaded, so no file should be read. List the column names (copy them from the output of `names(complete_old)` in step 1), and add anything you know about them, such as units or missing values.
+3. **The tasks.** Paste in the six tasks below.
+4. **What to use and what to return.** Paste in the paragraph below. It asks for code only, because explaining the code is your job in Part 4, and it limits the assistant to the functions you've met, so that you can follow what it writes.
+
+To see the difference this makes, here are three prompts for a task that isn't one of yours, a histogram of weight. First, a prompt that leaves the assistant guessing:
+
+```
+Write R code to explore the rodent data and make some plots.
+```
+
+It doesn't say which data, which packages, or which kind of plot, so the assistant has to guess, and it may guess a file to read or columns that don't exist. A better prompt:
+
+```
+I'm using R with the tidyverse and ratdat packages. Make a histogram of weight from the complete_old data frame.
+```
+
+This names the packages, the data frame, and the task, but it doesn't list the columns, say anything about missing values or labels, or say what to leave out. The answer may read a file, use functions you haven't met, or come with a long explanation. And here is the kind of prompt we're looking for:
+
+```
+I'm learning R, using the tidyverse and ratdat packages. The data frame complete_old is already available once ratdat is loaded, so please don't read any file. Its columns are: record_id, month, day, year, plot_id, species_id, sex, hindfoot_length, weight, genus, species, taxa, plot_type. Weight is in grams, and it has missing values.
+
+Task: make a histogram of weight with ggplot2. Give it a title, and an x axis label that includes the units. Save it as weight_histogram.png in the working directory.
+
+Use only library(), ggplot2 functions, and ggsave(). Do not use pipes or functions such as filter() or mutate(). Give me only the R code, in one block, with a comment before each step. Do not explain it. It must run without errors.
+```
+
+Its first paragraph is Parts 1 and 2: who the writer is, what they're using, the data frame, the columns, and what is known about them. Its second paragraph is Part 3, a single task described precisely. Its third paragraph is Part 4. Notice how exactly the task says what the plot should have.
+
+Now it's your turn. Here are your six tasks, for Part 3:
+
+```
+Task 1: Load the tidyverse and ratdat packages.
+
+Task 2: Explore the complete_old data frame: show its class, its first 10 rows, its structure, and a summary of every column.
+
+Task 3: Show the minimum of the weight column, first without handling missing values and then with the missing values removed. Then calculate the 25th, 50th, and 75th percentiles of weight and of hindfoot_length.
+
+Task 4: Create three vectors by hand: a numeric vector with one missing value, a character vector, and a logical vector. Print the class of each. Then combine a number, a logical value, and a character string into one vector, and print the result and its class.
+
+Task 5: Create a factor from the sex column, and print its levels.
+
+Task 6: Make four plots with ggplot2.
+(a) A scatterplot of hindfoot_length (y axis) against weight (x axis), with transparent points.
+(b) The same scatterplot, with points colored by plot_type and a colorblind-friendly color scale.
+(c) A boxplot of hindfoot_length for each plot_type, with jittered points behind the boxes, no fill on the boxes, and no separate outlier points.
+(d) A final version of plot (c) with a black-and-white theme, a title, axis labels that include the units (hindfoot length is in millimeters), no legend, and one panel for each value of sex, stacked in a single column. Save this plot as a PNG file called hindfoot_by_plot_type.png in the working directory.
+```
+
+And here is the paragraph for Part 4:
+
+```
+Use only these functions: library(), class(), head(), str(), summary(), min(), quantile(), c(), factor(), levels(), and functions from ggplot2. Do not use filter(), select(), mutate(), group_by(), summarize(), or pipes.
+
+Give me only the R code, in one block, with a comment before each task such as # Task 1. Do not explain the code. It must run from top to bottom without errors.
+```
+
+Put the four parts together in this order, with a blank line between them:
+
+```
+[Part 1: write this yourself. One or two sentences about what you are using.]
+
+[Part 2: write this yourself. The data frame, the fact that no file is needed, the column names, and anything you know about them.]
+
+[Part 3: paste the six tasks here.]
+
+[Part 4: paste the paragraph about what to use and what to return here.]
+```
+
+Write your prompt in a plain text file or a note, or directly in the assistant's chat box, and keep a copy. You'll paste it into your document in step 4.
+
+**3. Ask the assistant for the script.**
+
+Open your AI assistant, give it your prompt, and read what it sends back. Note the name of the assistant, and today's date, because your document will record both. If the answer isn't what you wanted, change your prompt or send a follow-up, and keep a note of what you changed. A good follow-up says what happened, shows the exact message or line if there is one, and says what you want back. For example, when the answer isn't what you asked for:
+
+```
+Your code reads a file called "data/surveys.csv". The data are already loaded as complete_old by the ratdat package, so please don't read any file. Rewrite the whole script without it, and keep everything else the same.
+```
+
+Keep the code the assistant gives you. You'll run it in the next step.
+
+**4. Create the document and run the script.**
+
+In RStudio, go to **File > New File > R Markdown...**, choose **Document** and **HTML**, give it a title and your name, and click **OK**. Then save it as `week10-ai-practice.Rmd` in a new folder for this assignment, one that isn't inside a Git repository (Chapter 3). The plot you save in Task 6 will land in the same folder. Select everything in the file, delete it, and paste in the following template. This is the document you'll hand in, and you'll fill it in as you work: Parts 1 and 2 in this step, and one more part in each of steps 5 to 8. The italic text marks the places you need to fill in, and by the time you submit, none of it should be left.
+
+<pre><code>---
+title: "Week 10: Coding with an AI Assistant"
+author: "Your Name"
+date: "&#96;r Sys.Date()&#96;"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+---
+
+&#96;&#96;&#96;{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+&#96;&#96;&#96;
+
+# Part 1: The assistant and the prompt
+
+- **AI assistant used:** *The name of the assistant, and the model or version if it tells you.*
+- **Date used:** *The date.*
+
+## My prompt
+
+*Paste the final version of the prompt you wrote in step 2 in the box below, replacing the text in it.*
+
+&#96;&#96;&#96;
+Paste your prompt here.
+&#96;&#96;&#96;
+
+## Changes to my prompt
+
+*If you rewrote your prompt after seeing the first answer, say what you changed and why. If you didn't, write "No changes."*
+
+# Part 2: The script the assistant wrote
+
+*Paste the code the assistant gave you in step 3 into the chunks below, one task per chunk, and delete the comment line in each. Every chunk has to run when you knit.*
+
+## Task 1: Load the packages
+
+&#96;&#96;&#96;{r task1}
+# Paste the code for Task 1 here.
+&#96;&#96;&#96;
+
+## Task 2: Explore the data
+
+&#96;&#96;&#96;{r task2}
+# Paste the code for Task 2 here.
+&#96;&#96;&#96;
+
+## Task 3: Missing values and quantiles
+
+&#96;&#96;&#96;{r task3}
+# Paste the code for Task 3 here.
+&#96;&#96;&#96;
+
+## Task 4: Vectors and coercion
+
+&#96;&#96;&#96;{r task4}
+# Paste the code for Task 4 here.
+&#96;&#96;&#96;
+
+## Task 5: A factor
+
+&#96;&#96;&#96;{r task5}
+# Paste the code for Task 5 here.
+&#96;&#96;&#96;
+
+## Task 6: Plots
+
+&#96;&#96;&#96;{r task6}
+# Paste the code for Task 6 here.
+&#96;&#96;&#96;
+
+## Errors I had to fix
+
+*List each error message you got, and what fixed it. If you got none, write "None."*
+
+# Part 3: Checking the assistant's work
+
+*Write this part yourself, without an AI.*
+
+## Check 1: Column names
+
+&#96;&#96;&#96;{r check1}
+names(complete_old)
+&#96;&#96;&#96;
+
+*List the columns the script uses. Are they all in the output above?*
+
+## Check 2: Two numbers
+
+*Choose two numbers that the script printed, and check each one in a different way, for example with &#96;summary()&#96; or a short command of your own. Put your checking code in the chunk below the table.*
+
+| Number from the script | Where it came from | How I checked it | What my check gave | Match? |
+|------------------------|--------------------|------------------|--------------------|--------|
+| *The number.* | *Which task printed it.* | *What I did.* | *The number.* | *Yes or no.* |
+| *The number.* | *Which task printed it.* | *What I did.* | *The number.* | *Yes or no.* |
+
+&#96;&#96;&#96;{r check2}
+# Put your checking code here.
+&#96;&#96;&#96;
+
+## Check 3: The plots
+
+*Answer in a sentence or two each. In the first scatterplot, which variable is on each axis, and is that what you asked for? R printed a warning about removed rows: how many, and what explains that number?*
+
+## Check 4: Functions beyond the lesson
+
+*List any function in the script that you did not meet in episodes 1 to 3 (for example, &#96;filter()&#96; or a pipe). Look one up with &#96;?&#96;, and explain what it does. If there are none, write "None," and say how you checked.*
+
+# Part 4: Explaining the code in my own words
+
+*Write this part yourself, without an AI. Choose three pieces of the script: one from Task 2 or 3, one from Task 4 or 5, and one from Task 6. Copy each into a chunk, and explain it line by line: what each function does, and what each argument changes.*
+
+## Piece 1
+
+&#96;&#96;&#96;{r piece1, eval=FALSE}
+# Copy the code here.
+&#96;&#96;&#96;
+
+*Your explanation.*
+
+## Piece 2
+
+&#96;&#96;&#96;{r piece2, eval=FALSE}
+# Copy the code here.
+&#96;&#96;&#96;
+
+*Your explanation.*
+
+## Piece 3
+
+&#96;&#96;&#96;{r piece3, eval=FALSE}
+# Copy the code here.
+&#96;&#96;&#96;
+
+*Your explanation.*
+
+# Part 5: Changing the code and predicting the result
+
+*Write this part yourself, without an AI. Write each prediction before you run the code.*
+
+## Change 1: Color by sex
+
+*Take the plot from Task 6 that colors points by plot type, and color them by &#96;sex&#96; instead. Prediction: how many entries will the color legend have, and what will they be?*
+
+&#96;&#96;&#96;{r change1}
+# Write your changed code here.
+&#96;&#96;&#96;
+
+*What happened, and was your prediction right? If not, why not?*
+
+## Change 2: A change of my own
+
+*Choose one more change: another variable, a different &#96;geom_&#96;, a different scale, or a different theme. Say what you will change, and predict what you will see.*
+
+&#96;&#96;&#96;{r change2}
+# Write your changed code here.
+&#96;&#96;&#96;
+
+*What happened, and was your prediction right? If not, why not?*
+
+# Part 6: Reflection
+
+*Write this part yourself, without an AI, in a few sentences each.*
+
+1. *Which parts of the script did you already understand, and which did you have to look up?*
+2. *Did the assistant make a mistake, or do something you didn't ask for? How did you find out? If you found nothing, how do you know the script is right?*
+3. *How would you rewrite your prompt now, to get a better first answer?*
+4. *When would you use an AI assistant for code in your research, and when would you write the code yourself? Consider reliability, and the concerns the Data Carpentry lesson raises.*
+
+# Session Information
+
+&#96;&#96;&#96;{r session-info}
+sessionInfo()
+&#96;&#96;&#96;</code></pre>
+
+Fill in Part 1: the assistant's name, the date, your final prompt, and the changes you made to it. Then paste the assistant's code into the six chunks in Part 2, one task per chunk, and run each chunk with its green arrow. The code may not split neatly into six tasks, so split it where you can. Don't knit until you've pasted in the code. Read the output of each chunk. If a chunk gives an error, tell the assistant, and write down in "Errors I had to fix" what happened. Show the error message and the code that caused it. For example:
+
+```
+I ran your code and got this error:
+
+Error in `geom_poit()`:
+! could not find function "geom_poit"
+
+It came from this line:
+
+ggplot(data = complete_old, mapping = aes(x = weight, y = hindfoot_length)) + geom_poit()
+
+What caused it? Give me only the corrected line.
+```
+
+**5. Check the assistant's work (Part 3).**
+
+The assistant can't be trusted to check itself, so you check it, without an AI. Do the four checks in the template: whether the column names are real, whether two numbers hold up when you get them another way, what the plots show and what the warnings mean, and whether the script used functions beyond the lesson. For the second check, `nrow()`, `summary()`, and your own short commands are enough.
+
+**6. Explain the code in your own words (Part 4).**
+
+Choose three pieces of the script, and explain each line by line: what each function does, and what each argument changes. The line you can't explain is the one to look up with `?` or a web search.
+
+**7. Change the code and predict the result (Part 5).**
+
+First, color the points in the plot by `sex` instead of `plot_type`. Before you run it, write down how many entries you think the legend will have. Then make one change of your own. For both, write your prediction first, then run the code, and say whether you were right.
+
+**8. Reflect (Part 6).**
+
+Answer the four questions in a few sentences each.
+
+**9. Knit and submit.**
+
+Click **Knit**, then read through the HTML document that opens. Check that every chunk ran, that every plot appears, and that no italic placeholder text is left.
+
+### If something goes wrong
+
+- **`there is no package called 'ratdat'`** (or `tidyverse`). Install it by running `install.packages(c("tidyverse", "ratdat"))` in the Console. Don't put `install.packages()` in your document.
+- **`object 'complete_old' not found`.** The `ratdat` package hasn't been loaded. Run the Task 1 chunk first.
+- **`could not find function "..."`.** The name is misspelled, or the code uses a package that isn't loaded. Compare the name with the lesson.
+- **`object '...' not found` while drawing a plot.** The assistant used a column name that isn't in your data. Compare it with `names(complete_old)`, and ask for a corrected version.
+- **The code reads a file, such as `read_csv("data/surveys.csv")`.** The data come with the `ratdat` package, so no file is needed. Tell the assistant to use `complete_old`, and ask for a new version.
+- **A warning such as `Removed 3081 rows containing missing values`.** This is a warning, not an error: the plot was still drawn. Check 3 in Part 3 asks you to explain the number.
+- **The code uses functions you haven't met, such as `filter()` or `%>%`.** That is what Check 4 is for. You can ask the assistant to rewrite the code without them, but note that you did.
+
+### What to submit
+
+Submit the following to Canvas:
+
+1. Your knitted HTML file, `week10-ai-practice.html`.
+2. Your `week10-ai-practice.Rmd` file.
+
+<!--
+INSTRUCTOR NOTES (not visible in rendered output)
+
+A strong submission has a prompt that names the package, the data frame, and the columns, lists the tasks, and states constraints; a script that runs from top to bottom; checks that use real numbers verified a second way; explanations that are in the student's own words and are accurate; predictions that were clearly written before the result; and a reflection that is specific. The student cannot be stopped from using an assistant on Parts 3 to 6, so it is worth asking a few students in class to walk through a line of their script and say what changes if an argument is altered.
+
+Facts about complete_old for checking students' claims: 16,878 rows and 13 columns, with class tbl_df, tbl, and data.frame. Year runs from 1977 to 1989. Weight has 1,692 missing values and hindfoot_length has 2,733, and 3,081 rows are missing at least one of the two, which is the number in the warning on the first two scatterplots. The boxplot warnings give 2,733. The minimum weight is NA until na.rm = TRUE is used, and then it is 4. The 25th, 50th, and 75th percentiles of weight are 24, 42, and 53, and those of hindfoot_length are 21, 35, and 37. The sex column holds F, M, and 1,300 blank entries (empty strings, not NA), so the factor has three levels, the faceted plot has three panels, and coloring by sex gives a legend with three entries, one of them blank. There are five plot types. The wording of warnings varies a little with the version of ggplot2.
+
+In the prompts, look for the four parts from step 2 (who the student is and what they are using; the data, with the data frame, no file needed, and the column names; the tasks; and what to use and what to return), and for follow-ups that include the exact error message and the code that caused it.
+
+Things worth looking for in submissions: code that reads a file instead of using complete_old; invented column names; pipes or filter() despite the constraint; extra packages; and a Check 4 that says None without saying how the student checked.
+-->
