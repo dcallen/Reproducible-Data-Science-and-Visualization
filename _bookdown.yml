@@ -14,6 +14,7 @@ rmd_files: [
   "09-github-ebook.Rmd",
   "10-lab-website.Rmd",
   "11-intro-to-r.Rmd",
+  "12-loops-and-joins.Rmd".
   "assignments.Rmd"
 ]
 new_session: yes

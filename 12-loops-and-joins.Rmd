@@ -1,0 +1,525 @@
+# Repeating Actions and Combining Tables
+>
+> **Questions**
+>
+> - How do I repeat an action many times without copying and pasting code?
+> - How do I combine information that is stored in different tables?
+> - How can I check that a join did what I intended?
+>
+> **Objectives**
+>
+> - Write a `for` loop that repeats an action for each item in a vector.
+> - Collect the results of a loop in a vector or a list.
+> - Use a loop to read several files and stack them into one data frame.
+> - Combine two tables with `left_join()`, `inner_join()`, `full_join()`, and `anti_join()`.
+> - Join tables whose key columns have different names.
+> - Check a join by comparing the number of rows before and after.
+
+Data rarely arrive in the form you need. They come as many files, one for each year or each site, or as several tables that each hold part of the story. You've already met the second problem in SQL (Chapter 6), where you combined tables with `JOIN`. This chapter shows you how to handle both problems in R. **Loops** repeat an action for each file, species, or site. **Joins** combine tables that share a key.
+
+## Setting up
+
+Open a new R script, and load the packages. The data we use are tables that come with the `ratdat` package, the same package that holds `complete_old`.
+
+```{r, eval=FALSE}
+library(tidyverse)
+library(ratdat)
+```
+
+## For loops
+
+### Repeating an action
+
+You've calculated the mean weight of a species with `filter()` and `summarize()`:
+
+```{r, eval=FALSE}
+complete_old %>%
+  filter(species_id == "DM") %>%
+  summarize(mean_weight = mean(weight, na.rm = TRUE))
+#> # A tibble: 1 × 1
+#>   mean_weight
+#>         <dbl>
+#> 1        42.5
+```
+
+To do the same for three species, we could copy this block twice and change the species code each time. For twenty species, that would be slow, and every copy is another chance for a typo. A **for loop** repeats a block of code for us.
+
+### The anatomy of a loop
+
+```{r, eval=FALSE}
+for (number in 1:3) {
+  print(number)
+}
+#> [1] 1
+#> [1] 2
+#> [1] 3
+```
+
+- `for` starts the loop.
+- `number` is the **loop variable**. It takes a new value each time around the loop.
+- `1:3` is the vector of values to go through, here 1, 2, and 3.
+- The code between the curly braces `{ }` is the **body**. R runs it once for each value.
+
+> **Printing inside a loop**
+>
+> When you type an expression at the console, R prints its value for you. Inside a loop, it doesn't. If you want to see something, ask for it with `print()`.
+
+**Challenge 1: Predict the output**
+
+1. What does this loop print? Work it out before you run it.
+
+```{r, eval=FALSE}
+for (letter in c("a", "b", "c")) {
+  print(paste("Letter:", letter))
+}
+```
+
+2. Write a loop that prints the square of each number from 1 to 5. (The square of `number` is `number^2`.)
+
+<details>
+<summary>Solution</summary>
+
+1. It prints one line for each letter, because `paste()` joins its inputs into a single piece of text:
+
+```{r, eval=FALSE}
+for (letter in c("a", "b", "c")) {
+  print(paste("Letter:", letter))
+}
+#> [1] "Letter: a"
+#> [1] "Letter: b"
+#> [1] "Letter: c"
+```
+
+2. The loop variable can be used in a calculation:
+
+```{r, eval=FALSE}
+for (number in 1:5) {
+  print(number^2)
+}
+#> [1] 1
+#> [1] 4
+#> [1] 9
+#> [1] 16
+#> [1] 25
+```
+
+</details>
+
+### Looping over names
+
+A loop can go through any vector, including a vector of names. Here we find the mean weight of each of three species:
+
+```{r, eval=FALSE}
+species_list <- c("DM", "DO", "DS")
+
+for (one_species in species_list) {
+  species_data <- complete_old %>% filter(species_id == one_species)
+  average <- mean(species_data$weight, na.rm = TRUE)
+  print(paste("The mean weight of", one_species, "is", round(average, 1)))
+}
+#> [1] "The mean weight of DM is 42.5"
+#> [1] "The mean weight of DO is 48.9"
+#> [1] "The mean weight of DS is 120.4"
+```
+
+Each time around, `one_species` holds the next code in `species_list`, so `filter()` picks out a different species. The `$` pulls one column out of a data frame, and `round(average, 1)` rounds to one decimal place.
+
+### Collecting results
+
+Printing is fine for looking, but usually we want to keep the results. To do that, make an empty vector before the loop, and fill in one position each time around:
+
+```{r, eval=FALSE}
+species_list <- c("DM", "DO", "DS")
+
+mean_weights <- numeric(length(species_list))
+names(mean_weights) <- species_list
+
+for (i in seq_along(species_list)) {
+  species_data <- complete_old %>% filter(species_id == species_list[i])
+  mean_weights[i] <- mean(species_data$weight, na.rm = TRUE)
+}
+
+mean_weights
+#>        DM        DO        DS 
+#>  42.52199  48.86905 120.41153
+```
+
+- `numeric(3)` makes a vector of three zeros, which are placeholders for the results.
+- `seq_along(species_list)` gives the positions 1, 2, 3, one for each item in `species_list`.
+- `species_list[i]` picks the `i`th species, and `mean_weights[i] <-` stores the answer in the `i`th position.
+
+> **Loops or `group_by()`?**
+>
+> This calculation can also be done without a loop:
+>
+> 
+> ```{r, eval=FALSE}
+> complete_old %>%
+>   filter(species_id %in% species_list) %>%
+>   group_by(species_id) %>%
+>   summarize(mean_weight = mean(weight, na.rm = TRUE))
+> #> # A tibble: 3 × 2
+> #>   species_id mean_weight
+> #>   <chr>            <dbl>
+> #> 1 DM                42.5
+> #> 2 DO                48.9
+> #> 3 DS               120.
+> ```
+>
+> When the action is a calculation on a data frame, `group_by()` is usually simpler. Loops are for actions that `group_by()` can't do, such as reading files, downloading data, or saving a plot for each site.
+
+**Challenge 2: Collect the results of a loop**
+
+Use a loop to find the largest `hindfoot_length` for each of the species `DM`, `DO`, `DS`, and `NL`. Collect the four answers in a named vector. (Use `max()`, and remember what missing values do.)
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+species_list <- c("DM", "DO", "DS", "NL")
+
+max_hindfoot <- numeric(length(species_list))
+names(max_hindfoot) <- species_list
+
+for (i in seq_along(species_list)) {
+  species_data <- complete_old %>% filter(species_id == species_list[i])
+  max_hindfoot[i] <- max(species_data$hindfoot_length, na.rm = TRUE)
+}
+
+max_hindfoot
+#> DM DO DS NL 
+#> 50 53 58 70
+```
+
+Without `na.rm = TRUE`, any species with a missing hindfoot length would give `NA`.
+
+</details>
+
+### Reading many files with a loop
+
+The most useful job for a loop is reading data that arrive in many files. To practice, we first need some files. Normally you would download them, but here a loop will write one file for each of three years:
+
+```{r, eval=FALSE}
+survey_dir <- file.path(tempdir(), "yearly-surveys")
+dir.create(survey_dir)
+
+for (survey_year in 1977:1979) {
+  one_year <- surveys %>% filter(year == survey_year)
+  write_csv(one_year, file.path(survey_dir, paste0("surveys_", survey_year, ".csv")))
+}
+
+list.files(survey_dir)
+#> [1] "surveys_1977.csv" "surveys_1978.csv" "surveys_1979.csv"
+```
+
+`tempdir()` is a temporary folder that R cleans up when you quit, so these files won't clutter your computer. Now we read the files back in, using a loop. We keep each table in a **list**, a container that can hold things of different sizes:
+
+```{r, eval=FALSE}
+files <- list.files(survey_dir, full.names = TRUE)
+
+yearly_tables <- list()
+
+for (one_file in files) {
+  yearly_tables[[basename(one_file)]] <- read_csv(one_file, show_col_types = FALSE)
+}
+
+names(yearly_tables)
+#> [1] "surveys_1977.csv" "surveys_1978.csv" "surveys_1979.csv"
+```
+
+Double square brackets pick out one item of a list, so `yearly_tables[["surveys_1977.csv"]]` is the 1977 table. `basename()` removes the folder from a file's path, leaving just its name. To stack the tables on top of each other, use `bind_rows()`:
+
+```{r, eval=FALSE}
+surveys_1977_79 <- bind_rows(yearly_tables)
+nrow(surveys_1977_79)
+#> [1] 2270
+```
+
+When the tables have names, `bind_rows()` can also record which table each row came from, which is useful when the file name holds information such as a site or a year:
+
+```{r, eval=FALSE}
+bind_rows(yearly_tables, .id = "file") %>%
+  select(file, record_id, year) %>%
+  head()
+#> # A tibble: 6 × 3
+#>   file             record_id  year
+#>   <chr>                <dbl> <dbl>
+#> 1 surveys_1977.csv         1  1977
+#> 2 surveys_1977.csv         2  1977
+#> 3 surveys_1977.csv         3  1977
+#> 4 surveys_1977.csv         4  1977
+#> 5 surveys_1977.csv         5  1977
+#> 6 surveys_1977.csv         6  1977
+```
+
+**Challenge 3: Check a stack**
+
+Write a loop that goes through `files` and, for each file, prints its name and its number of rows. Keep a running total as you go. Then check that the total matches the number of rows in `surveys_1977_79`.
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+total_rows <- 0
+
+for (one_file in files) {
+  file_rows <- nrow(yearly_tables[[basename(one_file)]])
+  print(paste(basename(one_file), "has", file_rows, "rows"))
+  total_rows <- total_rows + file_rows
+}
+#> [1] "surveys_1977.csv has 503 rows"
+#> [1] "surveys_1978.csv has 1048 rows"
+#> [1] "surveys_1979.csv has 719 rows"
+
+total_rows
+#> [1] 2270
+nrow(surveys_1977_79)
+#> [1] 2270
+```
+
+Starting a total at zero and adding to it each time around is a common pattern.
+
+</details>
+
+## Joining tables
+
+### Tables that belong together
+
+In Chapter 5, you saw that a database keeps different kinds of information in different tables, linked by key columns. The `ratdat` package holds the tables that `complete_old` was built from: `complete_old` is these tables joined together, and trimmed to the years 1977 to 1989. Here are the first rows of three of them:
+
+```{r, eval=FALSE}
+head(surveys)
+#> # A tibble: 6 × 9
+#>   record_id month   day  year plot_id species_id sex   hindfoot_length weight
+#>       <int> <int> <int> <int>   <int> <chr>      <chr>           <int>  <int>
+#> 1         1     7    16  1977       2 NL         M                  32     NA
+#> 2         2     7    16  1977       3 NL         M                  33     NA
+#> 3         3     7    16  1977       2 DM         F                  37     NA
+#> 4         4     7    16  1977       7 DM         M                  36     NA
+#> 5         5     7    16  1977       3 DM         M                  35     NA
+#> 6         6     7    16  1977       1 PF         M                  14     NA
+head(species)
+#> # A tibble: 6 × 4
+#>   species_id genus            species         taxa  
+#>   <chr>      <chr>            <chr>           <chr> 
+#> 1 AB         Amphispiza       bilineata       Bird  
+#> 2 AH         Ammospermophilus harrisi         Rodent
+#> 3 AS         Ammodramus       savannarum      Bird  
+#> 4 BA         Baiomys          taylori         Rodent
+#> 5 CB         Campylorhynchus  brunneicapillus Bird  
+#> 6 CM         Calamospiza      melanocorys     Bird
+head(plots)
+#> # A tibble: 6 × 2
+#>   plot_id plot_type                
+#>     <int> <chr>                    
+#> 1       1 Spectab exclosure        
+#> 2       2 Control                  
+#> 3       3 Long-term Krat Exclosure 
+#> 4       4 Control                  
+#> 5       5 Rodent Exclosure         
+#> 6       6 Short-term Krat Exclosure
+```
+
+Each row of `surveys` is one captured animal. It records only a `species_id` and a `plot_id`. The details of each species are in `species`, and the details of each plot are in `plots`. The columns `species_id` and `plot_id` are the **keys** that link the tables. A **join** uses the keys to bring the columns of one table alongside the rows of another.
+
+### left_join()
+
+To add the plot type to each survey record, we join `plots` onto `surveys`:
+
+```{r, eval=FALSE}
+surveys_plots <- left_join(surveys, plots, by = "plot_id")
+
+nrow(surveys)
+#> [1] 35549
+nrow(surveys_plots)
+#> [1] 35549
+names(surveys_plots)
+#>  [1] "record_id"       "month"           "day"             "year"           
+#>  [5] "plot_id"         "species_id"      "sex"             "hindfoot_length"
+#>  [9] "weight"          "plot_type"
+```
+
+`left_join()` keeps every row of the **left** table (the first one we give it), and adds the columns of the right table. The `by` argument names the key column. The result has the same number of rows as `surveys`, and one new column, `plot_type`. Where a row of the left table has no match in the right table, the new columns are filled with `NA`.
+
+If you leave out `by`, dplyr guesses, and tells you what it chose:
+
+```{r, eval=FALSE}
+left_join(surveys, plots) %>% head(3)
+#> Joining with `by = join_by(plot_id)`
+#> # A tibble: 3 × 10
+#>   record_id month   day  year plot_id species_id sex   hindfoot_length weight
+#>       <int> <int> <int> <int>   <int> <chr>      <chr>           <int>  <int>
+#> 1         1     7    16  1977       2 NL         M                  32     NA
+#> 2         2     7    16  1977       3 NL         M                  33     NA
+#> 3         3     7    16  1977       2 DM         F                  37     NA
+#> # ℹ 1 more variable: plot_type <chr>
+```
+
+Guessing works until a table gains a second column with the same name, so it is safer to always write `by` yourself.
+
+### Choosing a join
+
+You've used these joins in SQL, and dplyr has a function for each:
+
+| dplyr | SQL | What it keeps |
+|-------|-----|---------------|
+| `left_join(x, y)` | `LEFT JOIN` | All rows of `x`, plus matching columns from `y` |
+| `inner_join(x, y)` | `INNER JOIN` | Only rows that have a match in both tables |
+| `full_join(x, y)` | `FULL JOIN` | All rows of both tables |
+| `anti_join(x, y)` | (no direct equivalent) | Rows of `x` that have no match in `y` |
+
+To see the difference, we join `surveys` to a table of rodent species only:
+
+```{r, eval=FALSE}
+rodent_species <- species %>% filter(taxa == "Rodent")
+
+nrow(surveys)
+#> [1] 35549
+nrow(left_join(surveys, rodent_species, by = "species_id"))
+#> [1] 35549
+nrow(inner_join(surveys, rodent_species, by = "species_id"))
+#> [1] 34247
+nrow(full_join(surveys, rodent_species, by = "species_id"))
+#> [1] 35551
+nrow(anti_join(surveys, rodent_species, by = "species_id"))
+#> [1] 1302
+```
+
+The left join keeps all 35,549 survey rows, filling in `NA` for animals that aren't rodents. The inner join drops those rows. The full join keeps everything, and adds rows for the rodent species that never appear in `surveys`. The anti join returns only the survey rows that failed to match, which makes it a good way to find out what a join leaves behind.
+
+### When the key columns have different names
+
+Sometimes the same key has a different name in each table. Suppose the plot column in `plots` were called `plot`. We tell `left_join()` which column matches which, with `c("left name" = "right name")`:
+
+```{r, eval=FALSE}
+plots_renamed <- rename(plots, plot = plot_id)
+
+left_join(surveys, plots_renamed, by = c("plot_id" = "plot")) %>% head(3)
+#> # A tibble: 3 × 10
+#>   record_id month   day  year plot_id species_id sex   hindfoot_length weight
+#>       <int> <int> <int> <int>   <int> <chr>      <chr>           <int>  <int>
+#> 1         1     7    16  1977       2 NL         M                  32     NA
+#> 2         2     7    16  1977       3 NL         M                  33     NA
+#> 3         3     7    16  1977       2 DM         F                  37     NA
+#> # ℹ 1 more variable: plot_type <chr>
+```
+
+### Checking a join
+
+Joins can go wrong quietly. The most common problem is a key that appears more than once in the table you are joining on. Here we add a second `DM` row to `species`, as a data entry mistake might:
+
+```{r, eval=FALSE}
+species_dup <- bind_rows(species, filter(species, species_id == "DM"))
+
+nrow(surveys)
+#> [1] 35549
+nrow(left_join(surveys, species_dup, by = "species_id"))
+#> Warning in left_join(surveys, species_dup, by = "species_id"): Detected an unexpected many-to-many relationship between `x` and `y`.
+#> ℹ Row 3 of `x` matches multiple rows in `y`.
+#> ℹ Row 18 of `y` matches multiple rows in `x`.
+#> ℹ If a many-to-many relationship is expected, set `relationship =
+#>   "many-to-many"` to silence this warning.
+#> [1] 46145
+```
+
+The result has more rows than `surveys`, because every `DM` animal now matches two rows, and dplyr warns us about it. Without the warning, the extra rows could go unnoticed, and the counts of everything downstream would be wrong. There are two defenses. First, always compare the number of rows before and after a join. Second, say what kind of match you expect with the `relationship` argument. Each survey row should match at most one species, a "many-to-one" relationship, and now R stops if that isn't true:
+
+```{r, eval=FALSE}
+left_join(surveys, species_dup, by = "species_id", relationship = "many-to-one")
+#> Error in `left_join()`:
+#> ! Each row in `x` must match at most 1 row in `y`.
+#> ℹ Row 3 of `x` matches multiple rows in `y`.
+```
+
+**Challenge 4: Add the species information**
+
+The `species` table holds the genus, species, and taxa of each `species_id`.
+
+1. Join `species` onto `surveys`, and save the result as `surveys_species`.
+2. Does the result have more rows, fewer rows, or the same number of rows as `surveys`?
+3. How many rows have a missing `taxa`? (`sum(is.na(x))` counts the missing values in `x`.)
+4. Use `anti_join()` to find the rows of `surveys` that have no match in `species`. What do they have in common?
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+surveys_species <- left_join(surveys, species, by = "species_id")
+
+nrow(surveys)
+#> [1] 35549
+nrow(surveys_species)
+#> [1] 35549
+
+sum(is.na(surveys_species$taxa))
+#> [1] 763
+
+unmatched <- anti_join(surveys, species, by = "species_id")
+nrow(unmatched)
+#> [1] 763
+unique(unmatched$species_id)
+#> [1] ""
+```
+
+The result has the same number of rows as `surveys`, which is what we want from a join like this. There are 763 rows with a missing `taxa`, and they are exactly the 763 rows that have no match in `species`. They all have a blank `species_id`, an empty piece of text, so they match nothing. This is the same kind of blank value you met in the `sex` column. The join did its job, but the blanks are worth knowing about before you analyze the data.
+
+</details>
+
+## Putting it together
+
+Loops and joins often work as a pair: a loop reads data that came in many files, and joins bring in the information from other tables.
+
+**Challenge 5: Loops and joins together**
+
+Use the `yearly_tables` list that you made earlier.
+
+1. Stack the three tables with `bind_rows()`.
+2. Join `species` and `plots` onto the stacked table.
+3. Calculate the number of animals captured in each plot type in each year. (Group by two columns, and use `n()` to count the rows in each group.)
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+yearly_all <- bind_rows(yearly_tables) %>%
+  left_join(species, by = "species_id") %>%
+  left_join(plots, by = "plot_id")
+
+yearly_all %>%
+  group_by(year, plot_type) %>%
+  summarize(n_animals = n()) %>%
+  ungroup()
+#> # A tibble: 15 × 3
+#>     year plot_type                 n_animals
+#>    <dbl> <chr>                         <int>
+#>  1  1977 Control                         223
+#>  2  1977 Long-term Krat Exclosure         70
+#>  3  1977 Rodent Exclosure                 69
+#>  4  1977 Short-term Krat Exclosure        92
+#>  5  1977 Spectab exclosure                49
+#>  6  1978 Control                         504
+#>  7  1978 Long-term Krat Exclosure         91
+#>  8  1978 Rodent Exclosure                113
+#>  9  1978 Short-term Krat Exclosure       207
+#> 10  1978 Spectab exclosure               133
+#> 11  1979 Control                         322
+#> 12  1979 Long-term Krat Exclosure         80
+#> 13  1979 Rodent Exclosure                105
+#> 14  1979 Short-term Krat Exclosure       129
+#> 15  1979 Spectab exclosure                83
+```
+
+A good check is that the counts add up to 2,270, the total number of rows in the three files, and that `yearly_all` has the same number of rows as the stacked table did before the joins.
+
+</details>
+
+## Key points
+
+- A `for` loop repeats a block of code once for each value in a vector.
+- Inside a loop, use `print()` to see results, and collect results in a vector or a list to keep them.
+- Make an empty vector or list before the loop, and fill it in as you go.
+- When the action is a calculation on a data frame, `group_by()` is often simpler. Use loops for actions such as reading many files.
+- `bind_rows()` stacks tables with the same columns. `.id` records where each row came from.
+- `left_join()` keeps every row of the left table and adds the columns of the right table. `inner_join()`, `full_join()`, and `anti_join()` keep different sets of rows.
+- Name the key with `by`, and use `c("left name" = "right name")` when the names differ.
+- Always compare row counts before and after a join. `anti_join()` shows what failed to match, and `relationship` makes R stop if the match isn't what you expected.

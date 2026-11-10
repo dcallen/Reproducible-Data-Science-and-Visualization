@@ -1507,3 +1507,150 @@ In the prompts, look for the four parts from step 2 (who the student is and what
 
 Things worth looking for in submissions: code that reads a file instead of using complete_old; invented column names; pipes or filter() despite the constraint; extra packages; and a Check 4 that says None without saying how the student checked.
 -->
+
+## Week 11: Wrangling Data with dplyr and tidyr
+
+This week, you'll practice `select()`, `filter()`, the pipe, `group_by()` with `summarize()`, and `pivot_wider()` and `pivot_longer()`, using the `complete_old` data from the Data Carpentry lesson.
+
+### The data
+
+Load the packages, and the data are ready to use as a data frame called `complete_old`:
+
+```
+library(tidyverse)
+library(ratdat)
+```
+
+The lesson reads the same data from a CSV file into an object called `surveys`. We use `complete_old` instead, so your numbers should match the lesson's, with one difference that you'll find in Part 2.
+
+### Questions
+
+Answer each question with R code. Use the object names given, and work in order, because later questions use the objects you make in earlier ones. Each question ends with a check, a value your result should match. If yours doesn't, find out why, rather than changing your answer to fit the number. Use only the functions from the lesson so far: `select()`, `filter()`, `group_by()`, `summarize()`, `arrange()`, `desc()`, `ungroup()`, `pivot_wider()`, `pivot_longer()`, the pipe `%>%`, and `ggplot2` functions.
+
+**Part 1: Select, filter, and pipes**
+
+**Question 1.** Select the columns `year`, `month`, `species_id`, and `plot_id`, in that order.
+
+*Check:* Your result has 16,878 rows and 4 columns, and its first row is 1977, 7, NL, 2.
+
+**Question 2.** Keep only the rows where `species_id` is `DM` or `DO`, and where `weight` isn't missing.
+
+*Check:* Your result has 6,909 rows.
+
+**Question 3.** Using a single pipeline, keep the rows from 1988 where `hindfoot_length` isn't missing, and then keep only the columns `record_id`, `species_id`, and `hindfoot_length`. Save the result as `hindfoot_1988`. Think about the order of the two steps: the filter uses a column that the select removes.
+
+*Check:* Your result has 1,332 rows and 3 columns.
+
+**Part 2: Split-apply-combine**
+
+**Question 4.** For each value of `sex`, how many animals are there, and what is their mean weight? Ignore missing weights when you calculate the mean.
+
+*Check:* F has 7,318 animals with a mean weight of 53.1, and M has 8,260 animals with a mean weight of 53.2.
+
+**Question 5.** Look at the groups in your answer to Question 4. One of them isn't F or M. Which group is it, and how many rows are in it? Try to remove it from the data with `filter(!is.na(sex))`. How many rows are left, and why? Then write a filter that does remove it. Write your answers as comments.
+
+*Check:* After your corrected filter, 15,578 rows should remain.
+
+**Question 6.** For each `species_id`, calculate the mean weight and the number of animals, using only animals that have a recorded weight. Sort the result from the heaviest mean weight to the lightest.
+
+*Check:* Your result has 18 rows. The first row is NL, with a mean weight of 158.4 and 824 animals, and the last is BA, with a mean weight of 7.0 and 3 animals.
+
+**Part 3: Pivoting**
+
+**Question 7.** Using only animals with a recorded weight from the species `DM`, `DO`, `DS`, and `NL`, calculate the mean weight of each species in each year. The result should have just three columns, `year`, `species_id`, and `mean_weight`, with no groups left over. Save it as `weight_by_species_year`.
+
+*Check:* Your result has 51 rows and 3 columns. In 1977, the mean weight of DM was 41.1.
+
+**Question 8.** Use `pivot_wider()` to reshape `weight_by_species_year` into a table with one row for each year and one column for each species. Save it as `weight_wide`. One cell of the result is a missing value. Which species and year is it, and what does it mean? Write your answer as a comment.
+
+*Check:* Your result has 13 rows and 5 columns (`year`, `DM`, `DO`, `DS`, and `NL`), and contains exactly 1 missing value.
+
+**Question 9.** Use `pivot_longer()` to reshape `weight_wide` back into long format, with the columns `year`, `species_id`, and `mean_weight`. Remove the rows with a missing value. Save it as `weight_long`.
+
+*Check:* Your result has 51 rows and 3 columns, the same number of rows as `weight_by_species_year`.
+
+**Question 10.** Using `weight_long`, make a line plot with year on the x axis, mean weight on the y axis, and one colored line for each species. Add a title, and axis labels that include the units (weight is in grams). Then, as a comment, say why `ggplot2` needs the long format for this plot rather than the wide one.
+
+*Check:* Your plot has four lines, and one of them starts a year later than the others.
+
+### What to submit
+
+Submit your R script to Canvas. Put your answers to the written questions (5, 8, and 10) in comments next to your code. You may use an AI assistant, as in Week 10, but you must be able to explain every line you hand in, and if you used one, say how at the end of your script in a comment.
+
+<!--
+INSTRUCTOR NOTES (not visible in rendered output)
+
+Solutions and grading notes. The numbers each question should produce are in the check lines above.
+
+library(tidyverse)
+library(ratdat)
+
+# Question 1
+q1 <- select(complete_old, year, month, species_id, plot_id)
+
+# Question 2
+q2 <- complete_old %>%
+  filter(species_id %in% c("DM", "DO") & !is.na(weight))
+
+# Question 3
+hindfoot_1988 <- complete_old %>%
+  filter(year == 1988 & !is.na(hindfoot_length)) %>%
+  select(record_id, species_id, hindfoot_length)
+
+# Question 4
+by_sex <- complete_old %>%
+  group_by(sex) %>%
+  summarize(mean_weight = mean(weight, na.rm = TRUE),
+            n = n())
+
+# Question 5
+# The odd group is the rows where sex is blank (an empty string), 1,300 of them.
+# filter(!is.na(sex)) leaves all 16,878 rows, because a blank string is not NA.
+# In the lesson, the surveys object comes from read_csv, which turns blanks into NA,
+# so there the group shows up as NA; complete_old keeps them as empty strings.
+q5_wrong <- complete_old %>% filter(!is.na(sex))
+q5 <- complete_old %>% filter(sex %in% c("F", "M"))
+
+# Question 6
+by_species <- complete_old %>%
+  filter(!is.na(weight)) %>%
+  group_by(species_id) %>%
+  summarize(mean_weight = mean(weight),
+            n = n()) %>%
+  arrange(desc(mean_weight))
+
+# Question 7
+weight_by_species_year <- complete_old %>%
+  filter(!is.na(weight) & species_id %in% c("DM", "DO", "DS", "NL")) %>%
+  group_by(year, species_id) %>%
+  summarize(mean_weight = mean(weight)) %>%
+  ungroup()
+
+# Question 8
+# The missing cell is NL in 1977: no NL with a recorded weight was captured that year,
+# either because none were caught or because none were weighed.
+weight_wide <- weight_by_species_year %>%
+  pivot_wider(names_from = species_id, values_from = mean_weight)
+
+# Question 9
+weight_long <- weight_wide %>%
+  pivot_longer(cols = -year, names_to = "species_id", values_to = "mean_weight") %>%
+  filter(!is.na(mean_weight))
+
+# Question 10
+q10 <- ggplot(data = weight_long, mapping = aes(x = year, y = mean_weight, color = species_id)) +
+  geom_line() +
+  labs(title = "Mean weight of four rodent species by year",
+       x = "Year",
+       y = "Mean weight (g)")
+q10
+
+# ggplot2 maps one variable to each aesthetic, so species has to be a single column for it
+# to be mapped to color. In the wide table each species is its own column.
+
+# Notes for grading
+# - A common slip with AI help is a function the lesson hasn't covered, such as mutate() or count().
+# - Question 3 tests understanding of order: filtering after select() fails with a confusing
+#   message (comparison (==) is possible only for atomic and list types), because R finds a
+#   function called year (from lubridate) instead of the removed column.
+-->
