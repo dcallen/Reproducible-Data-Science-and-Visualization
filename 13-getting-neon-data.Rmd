@@ -1,0 +1,381 @@
+# Getting Data from NEON
+>
+> **Questions**
+>
+> - How does NEON organize its data?
+> - How do I get an API token, and how do I keep it secret?
+> - How do I download a NEON data product into R?
+> - How do I download many products at once, and check what I got?
+>
+> **Objectives**
+>
+> - Describe how NEON organizes data into sites, data products, and releases.
+> - Get a NEON API token, and store it where it can't end up in your code or on GitHub.
+> - Download a data product with `loadByProduct()`, and describe what it returns.
+> - Choose the right arguments for each product: site, dates, package, time index, and provisional data.
+> - Use a loop to download several products, and save the results to disk.
+> - Check what you downloaded, including what is missing.
+
+The National Ecological Observatory Network (NEON) measures ecosystems at sites across the United States, using the same methods at every site, and publishes the data openly. Over the next few chapters, we'll work with data from six NEON stream sites: light and water temperature recorded by sensors every 30 minutes, counts of macroinvertebrates and fish, sediment chemistry, microbes, habitat surveys, and riparian vegetation. These data are stored in many tables of different kinds, and the tables don't always agree with each other. This chapter is about getting them.
+
+## What we are downloading
+
+We'll use six sites, all wadeable streams, and the year 2024.
+
+| Code | Site | State |
+|------|------|-------|
+| HOPB | Lower Hop Brook | Massachusetts |
+| LEWI | Lewis Run | Virginia |
+| POSE | Posey Creek | Virginia |
+| WALK | Walker Branch | Tennessee |
+| LECO | LeConte Creek | Tennessee |
+| MAYF | Mayfield Creek | Alabama |
+
+NEON publishes its data as **data products**. Each has an ID in the form `DP1.#####.###`, and we'll download ten:
+
+| Product ID | Name | Kind |
+|------------|------|------|
+| DP1.20120.001 | Macroinvertebrate collection | Observations |
+| DP1.20107.001 | Fish electrofishing, gill netting, and fyke netting counts | Observations |
+| DP1.20277.001 | Benthic microbe group abundances | Observations |
+| DP1.20086.002 | Benthic microbe community taxonomy | Observations |
+| DP1.20042.001 | PAR at water surface | Sensor |
+| DP1.20001.001 | Rapid habitat assessment survey | Observations |
+| DP1.20191.001 | Riparian vegetation % cover | Observations |
+| DP1.20194.001 | Sediment chemical and physical properties | Observations |
+| DP1.20053.001 | Temperature (PRT) in surface water | Sensor |
+| DP4.00130.001 | Continuous discharge | Sensor |
+
+Sensor products are measured continuously, and NEON publishes them as averages over short intervals. We'll ask for the 30-minute averages, except for discharge, which NEON publishes as 15-minute averages. Observation products come from field and laboratory samples, collected a few times a year. A few terms will come up again and again:
+
+- A **release** is a yearly snapshot of the data, such as `RELEASE-2026`. Released data are stable, and each release has a DOI that you can cite.
+- **Provisional** data are newer than the latest release, and can still change.
+- A product has a **basic** and an **expanded** package. The expanded package adds extra tables.
+- The last three digits of a product ID are its revision. `DP1.20086.002` is a revision of an older product, `DP1.20086.001`, which NEON has replaced.
+
+> **Four products need extra care**
+>
+> NEON announced in January 2026 that it was discontinuing two of these products, riparian vegetation % cover (`DP1.20191.001`) and benthic microbe group abundances (`DP1.20277.001`). No new data are being added to them. Data collected before the change should still be available, but we will check that 2024 is there.
+>
+> The rapid habitat assessment survey (`DP1.20001.001`) became its own data product in October 2026. Because it is new, its data may still be provisional, so we will ask for provisional data for that product. It is also so new that the package may not handle it smoothly yet. If its download fails, the loop below will tell you why, and carry on with the other products.
+>
+> Continuous discharge (`DP4.00130.001`) needs care too. NEON releases discharge data by water year, which runs from October to September, so the latest release includes discharge only through September 2024. The data for October to December 2024 are provisional and can still change, so we ask for provisional data for this product. NEON also publishes discharge as 15-minute averages, not 30-minute averages, so we ask for the 15-minute interval and will bring it into line with the other sensor data later.
+
+## Setting up
+
+Work in a project folder with the structure from Chapter 1, including `scripts` and `data/raw` folders, and make it your working directory (Chapter 6 shows how). Write the code in this chapter in a script, `scripts/01-download-neon.R`, so that you have a record of exactly what you downloaded. Start with the packages:
+
+```{r, eval=FALSE}
+install.packages("neonUtilities")
+library(tidyverse)
+library(neonUtilities)
+packageVersion("neonUtilities")
+```
+
+You only need to install a package once. The version should be 4.0.0 or higher. NEON changed how downloads work in 2026, and older versions of the package may not work with the new rules.
+
+## Getting an API token
+
+Since June 2026, NEON requires an **API token** to download data. A token is a long string of letters and numbers that identifies you to NEON's servers. It's free.
+
+**Try it now.** Go to neonscience.org, and sign in to your NEON user account, or create one. Open your account page, find the section on API tokens, generate a token, and copy it. NEON explains tokens in its API token tutorial, which you can find in its Learning Hub. A token expires after a while, and `neonUtilities` tells you when yours has, so that you can generate a new one.
+
+## Keeping your token secret
+
+Anyone who has your token can download data as you. If you paste it into a script and push that script to GitHub, it becomes public. So the token never goes in a script, or in a document, or in a repository. Instead, we store it in a file called `.Renviron` that lives in your home folder, outside all of your projects. R reads this file when it starts, and makes everything in it available as an **environment variable**.
+
+**Try it now.** In the Console, run the following. It opens `.Renviron`, and creates it if it doesn't exist yet:
+
+```{r, eval=FALSE}
+file.edit("~/.Renviron")
+```
+
+Add one line, with your own token in place of the example, and no quotes. Press Enter at the end of the line, so that the file finishes with a blank line.
+
+```
+NEON_TOKEN=paste-your-token-here
+```
+
+Save the file, and restart R (in RStudio, go to **Session > Restart R**). A file whose name starts with a dot is hidden in Finder and File Explorer, which is why we open it from R. Now check that R can find your token, without printing it:
+
+```{r, eval=FALSE}
+token <- Sys.getenv("NEON_TOKEN")
+nchar(token) > 0
+```
+
+This should print `TRUE`. If it prints `FALSE`, R can't find the token: check that you saved the file, and restart R again. Never print your token in a document you hand in. If it ever ends up on GitHub, generate a new one.
+
+## Downloading one product
+
+The function that does the work is `loadByProduct()`. We'll try it on one product at one site, to see what comes back before we ask for everything:
+
+```{r, eval=FALSE}
+inv_test <- loadByProduct(
+  dpID = "DP1.20120.001",
+  site = "HOPB",
+  startdate = "2024-01",
+  enddate = "2024-12",
+  token = Sys.getenv("NEON_TOKEN")
+)
+```
+
+Before it downloads anything, R works out how large the download will be, and asks: `Continuing will download files totaling approximately ... Do you want to proceed y/n:`. Type `y` and press Enter. NEON's data come in monthly packages, so any month between `startdate` and `enddate` is included in full.
+
+The function returns a **named list**, like the ones you made in Chapter 12. Each item is a table. Besides the data tables, such as `inv_fieldData` and `inv_perSample`, the list holds documentation: a table of allowed values for coded columns, such as `categoricalCodes_20120`, a table that defines every variable, a validation table, and a citation table. NEON asks you to cite the data you use, and the citation table is where to find how.
+
+**Challenge 1: Explore a download**
+
+Using `inv_test`:
+
+1. What is its class, and how many items does it have?
+2. Print the names of the items. Which look like data tables, and which look like documentation?
+3. Look at the first rows of `inv_fieldData`. Which columns tell you the site and the date?
+4. Find the table that defines the variables (its name starts with `variables`), and look up what one column of `inv_fieldData` means.
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+class(inv_test)
+length(inv_test)
+names(inv_test)
+
+head(inv_test$inv_fieldData)
+
+variables_name <- grep("^variables", names(inv_test), value = TRUE)
+variables_name
+View(inv_test[[variables_name]])
+```
+
+The data tables share a prefix that belongs to the product (here `inv_`). The other items are documentation: the variable definitions, the allowed values of coded columns, validation rules, and the citation. In the data tables, `siteID` holds the site, and a column such as `collectDate` holds the date of collection. When a column name isn't clear, the variables table defines it, and gives its units and type.
+
+</details>
+
+## Choosing the arguments
+
+Each product needs its own settings. These are the arguments of `loadByProduct()` that matter for us:
+
+| Argument | What it does | Our choice |
+|----------|--------------|------------|
+| `dpID` | The product ID | One product at a time |
+| `site` | A vector of four-letter site codes | The six sites |
+| `startdate`, `enddate` | The first and last month, as `"YYYY-MM"` | `"2024-01"` and `"2024-12"` |
+| `package` | `"basic"` or `"expanded"` | Basic, except for the microbe taxonomy product, which needs expanded to include its per-sample taxonomy tables (`mct_benthicPerSampleTaxonomy_16S` and `mct_benthicPerSampleTaxonomy_ITS`) |
+| `timeIndex` | For sensor products only, the averaging interval in minutes. `getTimeIndex()` lists the intervals a product offers | `"30"` for PAR and water temperature, and `"15"` for discharge |
+| `include.provisional` | Whether to include provisional data | `FALSE`, except for the habitat and discharge products |
+| `release` | Which release to download | The default, `"current"` |
+| `check.size` | Whether R asks before downloading | `TRUE` at first, then `FALSE` in a script |
+| `token` | Your API token | `Sys.getenv("NEON_TOKEN")` |
+
+**Challenge 2: Which time intervals exist?**
+
+The `timeIndex` argument only makes sense for sensor data. The function `getTimeIndex()` tells you which averaging intervals a product offers.
+
+1. Run it for the two sensor products, `DP1.20042.001` and `DP1.20053.001`. Is 30 one of the intervals?
+2. Run it for the fish product, `DP1.20107.001`, and read the error message. What does it tell you?
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+getTimeIndex("DP1.20042.001", token = Sys.getenv("NEON_TOKEN"))
+getTimeIndex("DP1.20053.001", token = Sys.getenv("NEON_TOKEN"))
+getTimeIndex("DP1.20107.001", token = Sys.getenv("NEON_TOKEN"))
+```
+
+Both sensor products list 30 among their intervals, in minutes, so `timeIndex = "30"` works for them. For the fish product, the last line stops with the message `DP1.20107.001 is not a streaming sensor (IS) data product; averaging interval is not relevant.` Fish counts come from field sampling, so there are no averages to choose from.
+
+If you pass `timeIndex = "30"` to `loadByProduct()` for an observation product, it doesn't stop with an error. It prints a message for each site and month, saying that no files with that time index were found, and returns nothing. So only the two sensor products get `timeIndex = "30"`.
+
+</details>
+
+## Downloading all of the products
+
+Ten products with different settings are a good job for a loop, and the settings are a good job for a table. We'll write the plan as a data frame, with one row for each product:
+
+```{r, eval=FALSE}
+sites <- c("HOPB", "LEWI", "POSE", "WALK", "LECO", "MAYF")
+
+plan <- tribble(
+  ~name,                 ~dpID,           ~package,   ~timeIndex, ~provisional,
+  "macroinvertebrates",  "DP1.20120.001", "basic",    "all",      FALSE,
+  "fish",                "DP1.20107.001", "basic",    "all",      FALSE,
+  "microbe_abundance",   "DP1.20277.001", "basic",    "all",      FALSE,
+  "microbe_taxonomy",    "DP1.20086.002", "expanded", "all",      FALSE,
+  "par",                 "DP1.20042.001", "basic",    "30",       FALSE,
+  "habitat",             "DP1.20001.001", "basic",    "all",      TRUE,
+  "riparian_cover",      "DP1.20191.001", "basic",    "all",      FALSE,
+  "sediment",            "DP1.20194.001", "basic",    "all",      FALSE,
+  "water_temperature",   "DP1.20053.001", "basic",    "30",       FALSE,
+  "discharge",           "DP4.00130.001", "basic",    "15",       TRUE
+)
+```
+
+```{r, eval=FALSE}
+plan
+#> # A tibble: 10 × 5
+#>    name               dpID          package  timeIndex provisional
+#>    <chr>              <chr>         <chr>    <chr>     <lgl>      
+#>  1 macroinvertebrates DP1.20120.001 basic    all       FALSE      
+#>  2 fish               DP1.20107.001 basic    all       FALSE      
+#>  3 microbe_abundance  DP1.20277.001 basic    all       FALSE      
+#>  4 microbe_taxonomy   DP1.20086.002 expanded all       FALSE      
+#>  5 par                DP1.20042.001 basic    30        FALSE      
+#>  6 habitat            DP1.20001.001 basic    all       TRUE       
+#>  7 riparian_cover     DP1.20191.001 basic    all       FALSE      
+#>  8 sediment           DP1.20194.001 basic    all       FALSE      
+#>  9 water_temperature  DP1.20053.001 basic    30        FALSE      
+#> 10 discharge          DP4.00130.001 basic    15        TRUE
+```
+
+Now the loop goes through the rows of `plan`. For each product, it downloads the data, keeps them in a list, and saves a copy on disk. If the download stops partway, for example when your connection drops, you can run the loop again, and it skips the products that it already has:
+
+```{r, eval=FALSE}
+dir.create(file.path("data", "raw", "neon"), recursive = TRUE, showWarnings = FALSE)
+
+neon_data <- list()
+
+for (i in seq_len(nrow(plan))) {
+  product_name <- plan$name[i]
+  file_path <- file.path("data", "raw", "neon", paste0(product_name, ".rds"))
+
+  if (file.exists(file_path)) {
+    print(paste(product_name, "was already downloaded"))
+    neon_data[[product_name]] <- readRDS(file_path)
+    next
+  }
+
+  print(paste("Downloading", product_name))
+  downloaded <- try(
+    loadByProduct(
+      dpID = plan$dpID[i],
+      site = sites,
+      startdate = "2024-01",
+      enddate = "2024-12",
+      package = plan$package[i],
+      timeIndex = plan$timeIndex[i],
+      include.provisional = plan$provisional[i],
+      check.size = FALSE,
+      token = Sys.getenv("NEON_TOKEN")
+    ),
+    silent = TRUE
+  )
+
+  if (inherits(downloaded, "try-error")) {
+    print(paste("Could not download", product_name))
+    cat(downloaded)
+  } else if (is.null(downloaded)) {
+    print(paste("No data came back for", product_name))
+  } else {
+    neon_data[[product_name]] <- downloaded
+    saveRDS(downloaded, file_path)
+  }
+}
+```
+
+A few parts of the loop are new:
+
+- `file.path()` joins the parts of a path with the right separator for your computer.
+- `saveRDS()` saves any R object to a file, and `readRDS()` reads it back, so that you only download once.
+- `next` skips the rest of the loop body, and moves on to the next product.
+- When there are no data for a product at your sites and dates, `loadByProduct()` stops with an error, and an error would end the whole loop. `try()` runs the download, and if it fails, hands back the error instead of stopping. `inherits(downloaded, "try-error")` asks whether that happened, and `cat(downloaded)` prints the reason.
+- Sometimes `loadByProduct()` returns nothing at all, which R calls `NULL`. The `is.null()` check keeps the loop from saving an empty result.
+
+We set `check.size = FALSE` so that the loop doesn't stop and ask about each product. The first time you download a new product, it's wise to leave the default of `TRUE`, so that you can see how large the download is. This will take a while, because the sensor products are large. Notice that the script never contains your token, only the instruction to look it up, so that it is safe to share.
+
+**Try it now.** Run the loop, and let it finish. When it does, you'll have a file for each product in `data/raw/neon`. Check their sizes, in bytes:
+
+```{r, eval=FALSE}
+file.size(list.files(file.path("data", "raw", "neon"), full.names = TRUE))
+```
+
+GitHub rejects any file larger than 100 MB, so keep an eye on these. We'll decide which files go in your repository in the next chapter.
+
+## Checking what you downloaded
+
+A download that finishes without an error isn't necessarily complete. Products can be empty, sites can be missing, and IDs can be wrong. The last three challenges check your data.
+
+**Challenge 3: Check the product IDs**
+
+The function `getProductInfo()` asks NEON about a product, and returns its details, including its name in `$productName`. If the ID doesn't exist, it returns `NULL`. Write a loop that goes through the IDs in `plan$dpID` and prints each ID with its name, or says that it was not found. Does each name match the one in `plan`?
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+for (id in plan$dpID) {
+  info <- getProductInfo(id, token = Sys.getenv("NEON_TOKEN"))
+
+  if (is.null(info)) {
+    print(paste(id, "was not found"))
+  } else {
+    print(paste(id, info$productName, sep = ": "))
+  }
+}
+```
+
+Checking an ID against NEON's own name for it is a quick way to catch a typo, such as a missing digit, before it costs you a long download.
+
+</details>
+
+**Challenge 4: What came back?**
+
+Which products are missing from `neon_data`? For the products that did come back, print the names of their tables.
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+setdiff(plan$name, names(neon_data))
+
+for (product_name in names(neon_data)) {
+  print(product_name)
+  print(names(neon_data[[product_name]]))
+}
+```
+
+`setdiff(a, b)` returns the items of `a` that aren't in `b`, so the first line lists the products that didn't come back. Scroll back through the loop's messages to find the reason for each. Write down any that are missing. The discontinued and brand new products are the likely suspects, and we'll deal with them in the next chapter.
+
+</details>
+
+**Challenge 5: Which sites have data?**
+
+Most NEON data tables have a `siteID` column. For every table in `neon_data` that has one, print the product, the table, and the sites that appear in it. Are all six sites there?
+
+<details>
+<summary>Solution</summary>
+
+```{r, eval=FALSE}
+for (product_name in names(neon_data)) {
+  for (table_name in names(neon_data[[product_name]])) {
+    one_table <- neon_data[[product_name]][[table_name]]
+
+    if (is.data.frame(one_table) && "siteID" %in% names(one_table)) {
+      sites_found <- paste(sort(unique(one_table$siteID)), collapse = " ")
+      print(paste(product_name, table_name, ":", sites_found))
+    }
+  }
+}
+```
+
+The loop inside a loop goes through every table of every product. The documentation items in each list aren't all data frames, and not all of them have a `siteID` column, so the `if` keeps only the tables that do. Compare what you find with the six sites you asked for. Gaps are common in real data, because not every site collects every product every year, and it is worth knowing about them before you analyze anything.
+
+</details>
+
+## If something goes wrong
+
+- **`API token was not provided, was invalid, or has expired.`** R can't find a working token. Check that `nchar(Sys.getenv("NEON_TOKEN")) > 0` prints `TRUE`, restart R after editing `.Renviron`, and generate a new token if yours has expired.
+- **`No internet connection detected. Cannot access NEON API.`** Check your connection, and run the loop again. Products that you have already saved are skipped.
+- **`Download halted.`** You answered anything other than `y` when R asked whether to proceed.
+- **`There are no data at the selected site(s).` or `There are no data at the selected date(s).`** NEON has no data for that product at your sites or in your date range. The loop reports it and moves on. A product that was discontinued, or is brand new, can do this.
+- **`... is not a properly formatted data product ID.`** The ID has a typo. It should look like `DP1.20120.001`.
+- **The download is very slow.** The sensor products are large. Leave the loop running, and don't interrupt it. If it stops, run it again.
+
+## Key points
+
+- NEON organizes data into sites and data products, and each product has an ID. Check IDs, because a typo is easy to make.
+- Since June 2026, downloads need a free API token. Store it in `.Renviron`, so that it never appears in your code or on GitHub.
+- `loadByProduct()` returns a named list of tables, plus documentation tables that define the variables and give the citation.
+- Sensor products can be downloaded as 30-minute averages with `timeIndex = "30"`. Observation products can't. Discharge is published at 15 minutes, and by water year, so late 2024 is provisional.
+- A table of settings and a loop make a repeatable download. Save the results with `saveRDS()` so that you only download once.
+- After a download, check what came back, what is missing, and which sites are present.
