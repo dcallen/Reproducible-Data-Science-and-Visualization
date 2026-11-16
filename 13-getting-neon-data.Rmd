@@ -1,22 +1,24 @@
 # Getting Data from NEON
 
-> **Teaching:** 40 minutes | **Exercises:** 40 minutes
+> **Teaching:** 80 minutes, live coding
 >
 > **Before class:** Create a NEON account and an API token (see "Getting an API token" below). It takes about 10 minutes, and you need it for everything else in this chapter.
 >
 > **Questions**
 >
 > - How does NEON organize its data?
-> - How do I get an API token, and how do I keep it secret?
+> - How do I get an API token, and how do I keep it out of my script?
 > - How do I download a NEON data product into R?
-> - How do I download many products at once, and check what I got?
+> - How can code make decisions, and how does that help me download many products at once?
+> - How do I check what I got?
 >
 > **Objectives**
 >
 > - Describe how NEON organizes data into sites, data products, and releases.
-> - Get a NEON API token, and store it where it can't end up in your code or on GitHub.
+> - Get a NEON API token, and store it in an object without saving it in your script.
 > - Download a data product with `loadByProduct()`, and describe what it returns.
 > - Choose the right arguments for each product: site, dates, package, time index, and provisional data.
+> - Use `if`, `else if` and `else` to make code choose between actions.
 > - Use a loop to download several products, and save the results to disk.
 > - Check what you downloaded, including what is missing.
 
@@ -106,32 +108,23 @@ You only need to install a package once. The version should be 4.0.0 or higher. 
 
 Since June 2026, NEON requires an **API token** to download data. A token is a long string of letters and numbers that identifies you to NEON's servers. It's free.
 
-**Try it now.** Go to neonscience.org, and sign in to your NEON user account, or create one. Open your account page, find the section on API tokens, generate a token, and copy it. NEON explains tokens in its API token tutorial, which you can find in its Learning Hub. A token expires after a while, and `neonUtilities` tells you when yours has, so that you can generate a new one.
+Go to neonscience.org, and sign in to your NEON user account, or create one. Open your account page, find the section on API tokens, generate a token, and copy it. NEON explains tokens in its API token tutorial, which you can find in its Learning Hub. A token expires after a while, and `neonUtilities` tells you when yours has, so that you can generate a new one.
 
-## Keeping your token secret
-
-Anyone who has your token can download data as you. If you paste it into a script and push that script to GitHub, it becomes public. So the token never goes in a script, or in a document, or in a repository. Instead, we store it in a file called `.Renviron` that lives in your home folder, outside every folder you work in. R reads this file when it starts, and makes everything in it available as an **environment variable**.
-
-**Try it now.** In the Console, run the following. It opens `.Renviron`, and creates it if it doesn't exist yet:
+Anyone who has your token can download data as you. If you paste it into a script and push that script to GitHub, it becomes public. So we will save the token in an object, and we will create that object in the **Console**, not in the script. A script is a file that gets saved and shared, but the Console is not. In the Console, run the following, with your own token in place of the example:
 
 ```{r, eval=FALSE}
-file.edit("~/.Renviron")
+token <- "paste-your-token-here"
 ```
 
-Add one line, with your own token in place of the example, and no quotes. Press Enter at the end of the line, so that the file finishes with a blank line.
-
-```
-NEON_TOKEN=paste-your-token-here
-```
-
-Save the file, and restart R (in RStudio, go to **Session > Restart R**). A file whose name starts with a dot is hidden in Finder and File Explorer, which is why we open it from R. Now check that R can find your token, without printing it:
+The token is now stored in an object called `token`, and the code in our script will use that object, never the token itself. Check that it is there, without printing the token:
 
 ```{r, eval=FALSE}
-token <- Sys.getenv("NEON_TOKEN")
-nchar(token) > 0
+nchar(token)
 ```
 
-This should print `TRUE`. If it prints `FALSE`, R can't find the token: check that you saved the file, and restart R again. Never print your token in a document you hand in. If it ever ends up on GitHub, generate a new one.
+`nchar()` counts the characters in the text. A real token is long, so you should see a large number. Never print your token in a document you hand in. If it ever ends up on GitHub, generate a new one.
+
+There is a cost to this. The `token` object lives in your R session, so when you close RStudio it disappears. If RStudio asks whether to save your workspace image when you quit, say **Don't Save**, and the token is not written to your computer. Each time you start a new session, run the `token <-` line in the Console again.
 
 ## Downloading one product
 
@@ -143,53 +136,44 @@ inv_test <- loadByProduct(
   site = "HOPB",
   startdate = "2024-01",
   enddate = "2024-12",
-  token = Sys.getenv("NEON_TOKEN")
+  token = token
 )
 ```
 
 Before it downloads anything, R works out how large the download will be, and asks: `Continuing will download files totaling approximately ... Do you want to proceed y/n:`. Type `y` and press Enter. NEON's data come in monthly packages, so any month between `startdate` and `enddate` is included in full.
 
-The function returns a **named list**, like the ones you made in Chapter 12. Each item is a table. Besides the data tables, such as `inv_fieldData` and `inv_perSample`, the list holds documentation: a table of allowed values for coded columns, such as `categoricalCodes_20120`, a table that defines every variable, a validation table, and a citation table. NEON asks you to cite the data you use, and the citation table is where to find how.
-
-**Challenge 1: Explore a download**
-
-Using `inv_test`:
-
-1. What is its class, and how many items does it have?
-2. Print the names of the items. Which look like data tables, and which look like documentation?
-3. Look at the first rows of `inv_fieldData`. Which columns tell you the site and the date?
-4. Find the table that defines the variables (its name starts with `variables`), and look up what one column of `inv_fieldData` means. Use code to pull out its description, data type and units, rather than scrolling through the table.
-
-<details>
-<summary>Solution</summary>
+The function returns a **named list**, like the ones you made in Chapter 12. Each item is a table. Let's look at what we got:
 
 ```{r, eval=FALSE}
 class(inv_test)
 length(inv_test)
 names(inv_test)
+```
 
+Some of the names are data tables, such as `inv_fieldData` and `inv_perSample`. They share a prefix that belongs to the product, here `inv_`. The rest are documentation: a table of allowed values for coded columns, `categoricalCodes_20120`, a table that defines every variable, `variables_20120`, a validation table, and a citation table. NEON asks you to cite the data you use, and the citation table is where to find how.
+
+Look at the first rows of one data table:
+
+```{r, eval=FALSE}
 head(inv_test$inv_fieldData)
+```
 
-variables_name <- grep("^variables", names(inv_test), value = TRUE)
-variables_name
+The column `siteID` holds the site, and `collectDate` holds the date of collection. When a column name isn't clear, the variables table defines it. It has one row for every column of every data table. Let's save it as its own object, and see what columns it has:
 
-variables_tbl <- inv_test[[variables_name]]
+```{r, eval=FALSE}
+variables_tbl <- inv_test$variables_20120
 names(variables_tbl)
+```
 
-# the columns of inv_fieldData
-names(inv_test$inv_fieldData)
+The column `table` says which data table a row describes, and `fieldName` says which column of that table. Now we can look up what `collectDate` means in `inv_fieldData`, by filtering the variables table:
 
-# look up one of them in the variables table
+```{r, eval=FALSE}
 variables_tbl |>
   filter(table == "inv_fieldData", fieldName == "collectDate") |>
   select(fieldName, description, dataType, units)
 ```
 
-The variables table has one row for every column of every data table, so we filter on `table` to choose the data table and on `fieldName` to choose the column. If `names(variables_tbl)` shows that `description` or `units` is spelled differently, or missing, adjust the `select()` to match. Any other column name from `names(inv_test$inv_fieldData)` works in place of `collectDate`.
-
-The data tables share a prefix that belongs to the product (here `inv_`). The other items are documentation: the variable definitions, the allowed values of coded columns, validation rules, and the citation. In the data tables, `siteID` holds the site, and a column such as `collectDate` holds the date of collection. When a column name isn't clear, the variables table defines it, and gives its units and type.
-
-</details>
+Any other column name from `names(inv_test$inv_fieldData)` works in place of `collectDate`. If `names(variables_tbl)` shows that `description` or `units` is spelled differently, change the `select()` to match.
 
 ## Choosing the arguments
 
@@ -205,29 +189,98 @@ Each product needs its own settings. These are the arguments of `loadByProduct()
 | `include.provisional` | Whether to include provisional data | `FALSE`, except for the habitat and discharge products |
 | `release` | Which release to download | The default, `"current"` |
 | `check.size` | Whether R asks before downloading | `TRUE` at first, then `FALSE` in a script |
-| `token` | Your API token | `Sys.getenv("NEON_TOKEN")` |
+| `token` | Your API token | The `token` object |
 
-**Challenge 2: Which time intervals exist?**
-
-The `timeIndex` argument only makes sense for sensor data. The function `getTimeIndex()` tells you which averaging intervals a product offers.
-
-1. Run it for the two sensor products, `DP1.20042.001` and `DP1.20053.001`. Is 30 one of the intervals?
-2. Run it for the fish product, `DP1.20107.001`, and read the error message. What does it tell you?
-
-<details>
-<summary>Solution</summary>
+The `timeIndex` argument only makes sense for sensor data. The function `getTimeIndex()` tells you which averaging intervals a product offers. Let's run it for the two sensor products:
 
 ```{r, eval=FALSE}
-getTimeIndex("DP1.20042.001", token = Sys.getenv("NEON_TOKEN"))
-getTimeIndex("DP1.20053.001", token = Sys.getenv("NEON_TOKEN"))
-getTimeIndex("DP1.20107.001", token = Sys.getenv("NEON_TOKEN"))
+getTimeIndex("DP1.20042.001", token = token)
+getTimeIndex("DP1.20053.001", token = token)
 ```
 
-Both sensor products list 30 among their intervals, in minutes, so `timeIndex = "30"` works for them. For the fish product, the last line stops with the message `DP1.20107.001 is not a streaming sensor (IS) data product; averaging interval is not relevant.` Fish counts come from field sampling, so there are no averages to choose from.
+Both list 30 among their intervals, in minutes, so `timeIndex = "30"` works for them. Now run it for the fish product, which is not a sensor product:
 
-If you pass `timeIndex = "30"` to `loadByProduct()` for an observation product, it doesn't stop with an error. It prints a message for each site and month, saying that no files with that time index were found, and returns nothing. So only the two sensor products get `timeIndex = "30"`.
+```{r, eval=FALSE}
+getTimeIndex("DP1.20107.001", token = token)
+```
 
-</details>
+It stops with the message `DP1.20107.001 is not a streaming sensor (IS) data product; averaging interval is not relevant.` Fish counts come from field sampling, so there are no averages to choose from.
+
+If you pass `timeIndex = "30"` to `loadByProduct()` for an observation product, it doesn't stop with an error. It prints a message for each site and month, saying that no files with that time index were found, and returns nothing. So only the two sensor products get `timeIndex = "30"`, and the rest get `"all"`.
+
+## Making decisions with if
+
+So far, every line of code you've run has done the same thing every time. An `if` statement lets code choose. It has a **condition** in parentheses, and some code in curly braces that runs only when the condition is `TRUE`:
+
+```{r, eval=FALSE}
+x <- 5
+
+if (x > 3) {
+  print("x is bigger than 3")
+}
+#> [1] "x is bigger than 3"
+```
+
+The condition, `x > 3`, is an expression that comes out as `TRUE` or `FALSE`. You can run it by itself to see which. If it is `FALSE`, R skips the braces, and nothing happens. To do something else in that case, add `else`:
+
+```{r, eval=FALSE}
+x <- 1
+
+if (x > 3) {
+  print("x is bigger than 3")
+} else {
+  print("x is 3 or smaller")
+}
+#> [1] "x is 3 or smaller"
+```
+
+To choose among more than two actions, add `else if`, with its own condition. R checks the conditions from the top, and runs the first block whose condition is `TRUE`. `else` goes last, and catches everything else:
+
+```{r, eval=FALSE}
+x <- 0
+
+if (x > 3) {
+  print("x is bigger than 3")
+} else if (x > 0) {
+  print("x is positive, but small")
+} else {
+  print("x is zero or negative")
+}
+#> [1] "x is zero or negative"
+```
+
+Two rules to remember. The condition must be a single `TRUE` or `FALSE`, so a vector of several values gives an error. And the `else` must start on the same line as the closing brace, `} else {`.
+
+Many functions are useful in conditions because they answer a yes-or-no question. We'll use several of them in this chapter:
+
+```{r, eval=FALSE}
+file.exists("raw/fish.rds")   # is there a file with this name?
+#> [1] FALSE
+
+is.null(NULL)                 # is this object NULL, which means "nothing"?
+#> [1] TRUE
+
+is.null(5)
+#> [1] FALSE
+
+"fish" %in% c("fish", "par")  # is the item in the vector?
+#> [1] TRUE
+```
+
+You can combine conditions with `&&`, which means "and", and `||`, which means "or". `!` flips a condition, so `!file.exists("raw/fish.rds")` is `TRUE` when the file is **not** there.
+
+One more tool. Normally, an error stops your code, and a loop stops with it. The function `try()` runs some code, and if it fails, it hands back the error instead of stopping:
+
+```{r, eval=FALSE}
+result <- try(log("a"), silent = TRUE)
+class(result)
+#> [1] "try-error"
+
+inherits(result, "try-error")
+#> [1] TRUE
+```
+
+`log("a")` fails, because you can't take the log of text, but `try()` catches the error and saves it in `result`. `inherits(result, "try-error")` asks whether that happened, so we can use it as a condition. We'll use it to download many products without one failure ending everything.
 
 ## Downloading all of the products
 
@@ -305,7 +358,7 @@ for (i in seq_len(nrow(plan))) {
       timeIndex = plan$timeIndex[i],
       include.provisional = plan$provisional[i],
       check.size = FALSE,
-      token = Sys.getenv("NEON_TOKEN")
+      token = token
     ),
     silent = TRUE
   )
@@ -322,17 +375,19 @@ for (i in seq_len(nrow(plan))) {
 }
 ```
 
-A few parts of the loop are new:
+Let's read it from the top. Each time around, `i` is the row number, so `plan$name[i]` is that row's product name, and `file_path` is where its file will be saved. `file.path()` joins the parts of a path with the right separator for your computer.
 
-- `file.path()` joins the parts of a path with the right separator for your computer.
-- `saveRDS()` saves any R object to a file, and `readRDS()` reads it back, so that you only download once.
-- `next` skips the rest of the loop body, and moves on to the next product.
-- When there are no data for a product at your sites and dates, `loadByProduct()` stops with an error, and an error would end the whole loop. `try()` runs the download, and if it fails, hands back the error instead of stopping. `inherits(downloaded, "try-error")` asks whether that happened, and `cat(downloaded)` prints the reason.
-- Sometimes `loadByProduct()` returns nothing at all, which R calls `NULL`. The `is.null()` check keeps the loop from saving an empty result.
+The first `if` asks whether the file already exists. If it does, we print a message, read the saved copy back with `readRDS()`, and `next` skips the rest of this trip around the loop, on to the next product. That is why running the loop a second time doesn't download anything twice.
 
-We set `check.size = FALSE` so that the loop doesn't stop and ask about each product. The first time you download a new product, it's wise to leave the default of `TRUE`, so that you can see how large the download is. This will take a while, because the sensor products are large. Notice that the script never contains your token, only the instruction to look it up, so that it is safe to share.
+If the file doesn't exist, we download. `try()` wraps `loadByProduct()`, so that a failure doesn't stop the loop. Then an `if`, `else if`, `else` chain decides what to do with the result:
 
-**Try it now.** Run the loop, and let it finish. When it does, you'll have one `.rds` file for each product in the `raw` folder. Check that they are there, and their sizes in bytes:
+1. If `downloaded` is a `"try-error"`, the download failed. We print which product, and `cat(downloaded)` prints the reason.
+2. Otherwise, if `downloaded` is `NULL`, nothing came back, and we say so, rather than saving an empty result.
+3. Otherwise, the download worked. We keep the result in `neon_data`, and `saveRDS()` saves it to disk, so that we only need to download once.
+
+We set `check.size = FALSE` so that the loop doesn't stop and ask about each product. The first time you download a new product, it's wise to leave the default of `TRUE`, so that you can see how large the download is. This will take a while, because the sensor products are large. The loop uses the `token` object, and the token itself is never in the script, so the script is safe to share.
+
+Run the loop, and let it finish. When it does, you'll have one `.rds` file for each product in the `raw` folder. Check that they are there, and their sizes in bytes:
 
 ```{r, eval=FALSE}
 list.files(neon_dir)
@@ -343,18 +398,13 @@ GitHub rejects any file larger than 100 MB, so keep an eye on these. When you ma
 
 ## Checking what you downloaded
 
-A download that finishes without an error isn't necessarily complete. Products can be empty, sites can be missing, and IDs can be wrong. The last three challenges check your data.
+A download that finishes without an error isn't necessarily complete. Products can be empty, sites can be missing, and IDs can be wrong. We'll make three checks.
 
-**Challenge 3: Check the product IDs**
-
-The function `getProductInfo()` asks NEON about a product, and returns its details, including its name in `$productName`. If the ID doesn't exist, it returns `NULL`. Write a loop that goes through the IDs in `plan$dpID` and prints each ID with its name, or says that it was not found. Does each name match the one in `plan`?
-
-<details>
-<summary>Solution</summary>
+**Check the product IDs.** The function `getProductInfo()` asks NEON about a product, and returns its details, including its name in `$productName`. If the ID doesn't exist, it returns `NULL`. A loop can go through the IDs in `plan$dpID`, and an `if` can decide what to print:
 
 ```{r, eval=FALSE}
 for (id in plan$dpID) {
-  info <- getProductInfo(id, token = Sys.getenv("NEON_TOKEN"))
+  info <- getProductInfo(id, token = token)
 
   if (is.null(info)) {
     print(paste(id, "was not found"))
@@ -364,36 +414,24 @@ for (id in plan$dpID) {
 }
 ```
 
-Checking an ID against NEON's own name for it is a quick way to catch a typo, such as a missing digit, before it costs you a long download.
+Compare each name with the one in the table at the top of the chapter. Checking an ID against NEON's own name for it is a quick way to catch a typo, such as a missing digit, before it costs you a long download.
 
-</details>
-
-**Challenge 4: What came back?**
-
-Which products are missing from `neon_data`? For the products that did come back, print the names of their tables.
-
-<details>
-<summary>Solution</summary>
+**Check what came back.** Which products are missing from `neon_data`? `setdiff(a, b)` returns the items of `a` that aren't in `b`, so this lists the products that didn't come back:
 
 ```{r, eval=FALSE}
 setdiff(plan$name, names(neon_data))
+```
 
+Scroll back through the loop's messages to find the reason for each, and write down any that are missing. The discontinued and brand new products are the likely suspects, and we'll deal with them in the next chapter. For the products that did come back, print the names of their tables:
+
+```{r, eval=FALSE}
 for (product_name in names(neon_data)) {
   print(product_name)
   print(names(neon_data[[product_name]]))
 }
 ```
 
-`setdiff(a, b)` returns the items of `a` that aren't in `b`, so the first line lists the products that didn't come back. Scroll back through the loop's messages to find the reason for each. Write down any that are missing. The discontinued and brand new products are the likely suspects, and we'll deal with them in the next chapter.
-
-</details>
-
-**Challenge 5: Which sites have data?**
-
-Most NEON data tables have a `siteID` column. For every table in `neon_data` that has one, print the product, the table, and the sites that appear in it. Are all six sites there?
-
-<details>
-<summary>Solution</summary>
+**Check which sites have data.** Most NEON data tables have a `siteID` column. We want to know which sites appear in each one. This takes a loop inside a loop: the outer loop goes through the products, and the inner loop goes through the tables of each product:
 
 ```{r, eval=FALSE}
 for (product_name in names(neon_data)) {
@@ -408,13 +446,14 @@ for (product_name in names(neon_data)) {
 }
 ```
 
-The loop inside a loop goes through every table of every product. The documentation items in each list aren't all data frames, and not all of them have a `siteID` column, so the `if` keeps only the tables that do. Compare what you find with the six sites you asked for. Gaps are common in real data, because not every site collects every product every year, and it is worth knowing about them before you analyze anything.
+The condition in the `if` has two parts joined by `&&`. The documentation items in each list aren't all data frames, and not all of the data frames have a `siteID` column. `is.data.frame(one_table)` is `TRUE` for a data frame, and `"siteID" %in% names(one_table)` is `TRUE` when it has that column. Only a table that passes both is printed. Inside the `if`, `unique()` keeps each site once, `sort()` puts them in order, and `paste(..., collapse = " ")` joins them into one piece of text.
 
-</details>
+Compare what you find with the six sites you asked for. Gaps are common in real data, because not every site collects every product every year, and it is worth knowing about them before you analyze anything.
 
 ## If something goes wrong
 
-- **`API token was not provided, was invalid, or has expired.`** R can't find a working token. Check that `nchar(Sys.getenv("NEON_TOKEN")) > 0` prints `TRUE`, restart R after editing `.Renviron`, and generate a new token if yours has expired.
+- **`API token was not provided, was invalid, or has expired.`** R can't find a working token. Check that `nchar(token)` prints a large number, which means the object exists, run the `token <-` line again if you restarted R, and generate a new token if yours has expired.
+- **`Error: object 'token' not found`** You haven't created the `token` object in this session. Run the `token <-` line in the Console.
 - **`No internet connection detected. Cannot access NEON API.`** Check your connection, and run the loop again. Products that you have already saved are skipped.
 - **`Download halted.`** You answered anything other than `y` when R asked whether to proceed.
 - **`There are no data at the selected site(s).` or `There are no data at the selected date(s).`** NEON has no data for that product at your sites or in your date range. The loop reports it and moves on. A product that was discontinued, or is brand new, can do this.
@@ -424,8 +463,10 @@ The loop inside a loop goes through every table of every product. The documentat
 ## Key points
 
 - NEON organizes data into sites and data products, and each product has an ID. Check IDs, because a typo is easy to make.
-- Since June 2026, downloads need a free API token. Store it in `.Renviron`, so that it never appears in your code or on GitHub.
+- Since June 2026, downloads need a free API token. Save it in an object created in the Console, so that it never appears in your script or on GitHub.
 - `loadByProduct()` returns a named list of tables, plus documentation tables that define the variables and give the citation.
+- `if`, `else if` and `else` make code choose between actions, based on a condition that is `TRUE` or `FALSE`.
+- `try()` lets a loop carry on after a failure, and `inherits(x, "try-error")` tells you whether one happened.
 - Sensor products can be downloaded as 30-minute averages with `timeIndex = "30"`. Observation products can't. Discharge is published at 15 minutes, and by water year, so late 2024 is provisional.
 - A table of settings and a loop make a repeatable download. Save the results with `saveRDS()` so that you only download once.
 - After a download, check what came back, what is missing, and which sites are present.
