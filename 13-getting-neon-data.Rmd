@@ -70,7 +70,16 @@ Sensor products are measured continuously, and NEON publishes them as averages o
 We haven't made a repository for this work yet, and you will make one later. For now, the downloads go in their own folder on your Desktop.
 
 1. On your Desktop, make a new folder called `neon-data`, using your computer's file manager.
-2. In RStudio, choose **Session > Set Working Directory > Choose Directory**, and select the `neon-data` folder. This makes it the **working directory**, the folder that R reads and writes relative paths from.
+2. Tell R to work in that folder with `setwd()`, which stands for "set working directory". This is the folder that R reads and writes relative paths from. Replace `yourname` with your own user name:
+
+```{r, eval=FALSE}
+# Mac
+setwd("/Users/yourname/Desktop/neon-data")
+
+# Windows
+setwd("C:/Users/yourname/Desktop/neon-data")
+```
+
 3. Check that it worked:
 
 ```{r, eval=FALSE}
@@ -78,7 +87,9 @@ getwd()
 #> [1] "/Users/yourname/Desktop/neon-data"
 ```
 
-The path will look different on your computer, but it should end in `neon-data`. Every path in this chapter is relative to this folder. If you close RStudio and come back later, set the working directory again before you run anything, or the files will land somewhere else.
+If you aren't sure what your path is, find the `neon-data` folder in your file manager. On a Mac, right-click it, hold the Option key, and choose **Copy "neon-data" as Pathname**. On Windows, hold Shift, right-click it, and choose **Copy as path**. Paste the result between the quotes. On Windows, the path will use backslashes (`\`), and R needs forward slashes (`/`), so change them. If your Desktop is synced with OneDrive, the path may contain `OneDrive`, and copying the path from the file manager takes care of that.
+
+The path printed by `getwd()` should end in `neon-data`. Every path in this chapter is relative to this folder. If you close RStudio and come back later, run the `setwd()` line again before you run anything, or the files will land somewhere else.
 
 Choose **File > New File > R Script** and save it as `01-download-neon.R` in the `neon-data` folder. Write the code in this chapter in that script, so that you have a record of exactly what you downloaded. Start with the packages:
 
