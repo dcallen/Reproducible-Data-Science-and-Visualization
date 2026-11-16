@@ -1,4 +1,8 @@
 # Getting Data from NEON
+
+> **Teaching:** 40 minutes | **Exercises:** 40 minutes
+>
+> **Before class:** Create a NEON account and an API token (see "Getting an API token" below). It takes about 10 minutes, and you need it for everything else in this chapter.
 >
 > **Questions**
 >
@@ -107,7 +111,7 @@ This should print `TRUE`. If it prints `FALSE`, R can't find the token: check th
 
 ## Downloading one product
 
-The function that does the work is `loadByProduct()`. We'll try it on one product at one site, to see what comes back before we ask for everything:
+The function that does the work is `loadByProduct()`. We'll try it on one product at one site, to see what comes back before we ask for everything. The product is **Macroinvertebrate collection** (`DP1.20120.001`), which is the sampling of aquatic invertebrates from the stream bed. The site is HOPB (Hop Brook), and we ask for 2024 only:
 
 ```{r, eval=FALSE}
 inv_test <- loadByProduct(
@@ -130,7 +134,7 @@ Using `inv_test`:
 1. What is its class, and how many items does it have?
 2. Print the names of the items. Which look like data tables, and which look like documentation?
 3. Look at the first rows of `inv_fieldData`. Which columns tell you the site and the date?
-4. Find the table that defines the variables (its name starts with `variables`), and look up what one column of `inv_fieldData` means.
+4. Find the table that defines the variables (its name starts with `variables`), and look up what one column of `inv_fieldData` means. Use code to pull out its description, data type and units, rather than scrolling through the table.
 
 <details>
 <summary>Solution</summary>
@@ -144,8 +148,20 @@ head(inv_test$inv_fieldData)
 
 variables_name <- grep("^variables", names(inv_test), value = TRUE)
 variables_name
-View(inv_test[[variables_name]])
+
+variables_tbl <- inv_test[[variables_name]]
+names(variables_tbl)
+
+# the columns of inv_fieldData
+names(inv_test$inv_fieldData)
+
+# look up one of them in the variables table
+variables_tbl |>
+  filter(table == "inv_fieldData", fieldName == "collectDate") |>
+  select(fieldName, description, dataType, units)
 ```
+
+The variables table has one row for every column of every data table, so we filter on `table` to choose the data table and on `fieldName` to choose the column. If `names(variables_tbl)` shows that `description` or `units` is spelled differently, or missing, adjust the `select()` to match. Any other column name from `names(inv_test$inv_fieldData)` works in place of `collectDate`.
 
 The data tables share a prefix that belongs to the product (here `inv_`). The other items are documentation: the variable definitions, the allowed values of coded columns, validation rules, and the citation. In the data tables, `siteID` holds the site, and a column such as `collectDate` holds the date of collection. When a column name isn't clear, the variables table defines it, and gives its units and type.
 
