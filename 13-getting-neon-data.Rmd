@@ -67,7 +67,20 @@ Sensor products are measured continuously, and NEON publishes them as averages o
 
 ## Setting up
 
-Work in a project folder with the structure from Chapter 1, including `scripts` and `data/raw` folders, and make it your working directory (Chapter 6 shows how). Write the code in this chapter in a script, `scripts/01-download-neon.R`, so that you have a record of exactly what you downloaded. Start with the packages:
+We haven't made a repository for this work yet, and you will make one later. For now, the downloads go in their own folder on your Desktop.
+
+1. On your Desktop, make a new folder called `neon-data`, using your computer's file manager.
+2. In RStudio, choose **Session > Set Working Directory > Choose Directory**, and select the `neon-data` folder. This makes it the **working directory**, the folder that R reads and writes relative paths from.
+3. Check that it worked:
+
+```{r, eval=FALSE}
+getwd()
+#> [1] "/Users/yourname/Desktop/neon-data"
+```
+
+The path will look different on your computer, but it should end in `neon-data`. Every path in this chapter is relative to this folder. If you close RStudio and come back later, set the working directory again before you run anything, or the files will land somewhere else.
+
+Choose **File > New File > R Script** and save it as `01-download-neon.R` in the `neon-data` folder. Write the code in this chapter in that script, so that you have a record of exactly what you downloaded. Start with the packages:
 
 ```{r, eval=FALSE}
 install.packages("neonUtilities")
@@ -86,7 +99,7 @@ Since June 2026, NEON requires an **API token** to download data. A token is a l
 
 ## Keeping your token secret
 
-Anyone who has your token can download data as you. If you paste it into a script and push that script to GitHub, it becomes public. So the token never goes in a script, or in a document, or in a repository. Instead, we store it in a file called `.Renviron` that lives in your home folder, outside all of your projects. R reads this file when it starts, and makes everything in it available as an **environment variable**.
+Anyone who has your token can download data as you. If you paste it into a script and push that script to GitHub, it becomes public. So the token never goes in a script, or in a document, or in a repository. Instead, we store it in a file called `.Renviron` that lives in your home folder, outside every folder you work in. R reads this file when it starts, and makes everything in it available as an **environment variable**.
 
 **Try it now.** In the Console, run the following. It opens `.Renviron`, and creates it if it doesn't exist yet:
 
@@ -244,16 +257,25 @@ plan
 #> 10 discharge          DP4.00130.001 basic    15        TRUE
 ```
 
-Now the loop goes through the rows of `plan`. For each product, it downloads the data, keeps them in a list, and saves a copy on disk. If the download stops partway, for example when your connection drops, you can run the loop again, and it skips the products that it already has:
+Before the loop, decide where the files will go. Each product is saved as its own file in a `raw` folder inside `neon-data`. The path is *relative*: R reads it from your working directory, so check that `getwd()` ends in `neon-data`, or the files will land somewhere else. We'll store the folder in `neon_dir`, and `dir.create()` makes it if it doesn't exist yet:
 
 ```{r, eval=FALSE}
-dir.create(file.path("data", "raw", "neon"), recursive = TRUE, showWarnings = FALSE)
+getwd()
 
+neon_dir <- "raw"
+neon_dir
+
+dir.create(neon_dir, recursive = TRUE, showWarnings = FALSE)
+```
+
+Now the loop goes through the rows of `plan`. For each product, it downloads the data, keeps them in a list, and saves a copy in `neon_dir`, with the product's name as the file name, such as `raw/fish.rds`. If the download stops partway, for example when your connection drops, you can run the loop again, and it skips the products that it already has:
+
+```{r, eval=FALSE}
 neon_data <- list()
 
 for (i in seq_len(nrow(plan))) {
   product_name <- plan$name[i]
-  file_path <- file.path("data", "raw", "neon", paste0(product_name, ".rds"))
+  file_path <- file.path(neon_dir, paste0(product_name, ".rds"))
 
   if (file.exists(file_path)) {
     print(paste(product_name, "was already downloaded"))
@@ -299,13 +321,14 @@ A few parts of the loop are new:
 
 We set `check.size = FALSE` so that the loop doesn't stop and ask about each product. The first time you download a new product, it's wise to leave the default of `TRUE`, so that you can see how large the download is. This will take a while, because the sensor products are large. Notice that the script never contains your token, only the instruction to look it up, so that it is safe to share.
 
-**Try it now.** Run the loop, and let it finish. When it does, you'll have a file for each product in `data/raw/neon`. Check their sizes, in bytes:
+**Try it now.** Run the loop, and let it finish. When it does, you'll have one `.rds` file for each product in the `raw` folder. Check that they are there, and their sizes in bytes:
 
 ```{r, eval=FALSE}
-file.size(list.files(file.path("data", "raw", "neon"), full.names = TRUE))
+list.files(neon_dir)
+file.size(list.files(neon_dir, full.names = TRUE))
 ```
 
-GitHub rejects any file larger than 100 MB, so keep an eye on these. We'll decide which files go in your repository in the next chapter.
+GitHub rejects any file larger than 100 MB, so keep an eye on these. When you make your repository later, large files like these will need to be kept out of it. We'll deal with that in the next chapter.
 
 ## Checking what you downloaded
 
