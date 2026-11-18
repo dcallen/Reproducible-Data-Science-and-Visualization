@@ -396,6 +396,44 @@ file.size(list.files(neon_dir, full.names = TRUE))
 
 GitHub rejects any file larger than 100 MB, so keep an eye on these. When you make your repository later, large files like these will need to be kept out of it. We'll deal with that in the next chapter.
 
+## A problem on Windows
+
+If you are on a Windows computer, the loop probably printed `Could not download microbe_taxonomy`, with an error saying that a zip file "cannot be opened". Nothing is wrong with the file. R downloads each product to a temporary folder deep inside your user folder, such as `C:\Users\yourname\AppData\Local\Temp\...`, and then unpacks it. The files in this product have very long names, and Windows can't create a folder when its full path is more than about 250 characters. A Mac has no such limit, so the download works there.
+
+The fix is to download the zip files to a folder with a short path, and then unpack them from there. `zipsByProduct()` downloads the zip files without unpacking them, and `stackByTable()` unpacks them and stacks the tables, which is what `loadByProduct()` does in one step. With `savepath = "envt"`, `stackByTable()` hands back a list of tables, as `loadByProduct()` does.
+
+We only want to do this when it is needed, which is a good job for an `if`. The condition has two parts: the product is missing from `neon_data`, and the computer is running Windows. `.Platform$OS.type` is `"windows"` on a Windows computer. The `!` in front of the first part flips it, so it is `TRUE` when `"microbe_taxonomy"` is **not** a name in `neon_data`:
+
+```{r, eval=FALSE}
+if (!("microbe_taxonomy" %in% names(neon_data)) && .Platform$OS.type == "windows") {
+  dir.create("C:/neon_zips", showWarnings = FALSE)
+
+  zipsByProduct(
+    dpID = "DP1.20086.002",
+    site = sites,
+    startdate = "2024-01",
+    enddate = "2024-12",
+    package = "expanded",
+    check.size = FALSE,
+    savepath = "C:/neon_zips",
+    token = token
+  )
+
+  microbe_taxonomy <- stackByTable("C:/neon_zips/filesToStack20086", savepath = "envt")
+
+  neon_data[["microbe_taxonomy"]] <- microbe_taxonomy
+  saveRDS(microbe_taxonomy, file.path(neon_dir, "microbe_taxonomy.rds"))
+}
+```
+
+On a Mac, the condition is `FALSE`, and nothing happens. On Windows, the data end up in `neon_data` and in `raw/microbe_taxonomy.rds`, exactly as if the loop had worked. Check:
+
+```{r, eval=FALSE}
+names(neon_data)
+```
+
+You should see all ten products.
+
 ## Checking what you downloaded
 
 A download that finishes without an error isn't necessarily complete. Products can be empty, sites can be missing, and IDs can be wrong. We'll make three checks.
@@ -458,6 +496,7 @@ Compare what you find with the six sites you asked for. Gaps are common in real 
 - **`Download halted.`** You answered anything other than `y` when R asked whether to proceed.
 - **`There are no data at the selected site(s).` or `There are no data at the selected date(s).`** NEON has no data for that product at your sites or in your date range. The loop reports it and moves on. A product that was discontinued, or is brand new, can do this.
 - **`... is not a properly formatted data product ID.`** The ID has a typo. It should look like `DP1.20120.001`.
+- **`zip file ... cannot be opened` on Windows.** The path to R's temporary folder is too long. See "A problem on Windows" above.
 - **The download is very slow.** The sensor products are large. Leave the loop running, and don't interrupt it. If it stops, run it again.
 
 ## Key points

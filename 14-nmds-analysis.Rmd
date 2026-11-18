@@ -1,0 +1,488 @@
+# Ordinating NEON Communities
+
+> **Teaching:** 80 minutes, live coding (Part 1 of 3)
+>
+> **Before class:** You need the ten `.rds` files from Chapter 13 in the `raw` folder of your `neon-data` folder, a GitHub account, and Git on your computer (Chapters 2 and 3).
+>
+> **Questions**
+>
+> - Where do the files of an analysis go, and which of them belong on GitHub?
+> - How do I turn NEON's tables of counts into a community matrix?
+> - What does an NMDS ordination show, and how do I run one?
+>
+> **Objectives**
+>
+> - Set up a repository for an analysis, and keep large raw data out of it with `.gitignore`.
+> - Read saved NEON data back into R, and describe how its tables fit together.
+> - Use the lowest practical taxonomic unit, and combine counts from several rows into one count for each sample and taxon.
+> - Convert counts to densities, so that samples of different sizes can be compared.
+> - Reshape long data into a community matrix with `pivot_wider()`.
+> - Run an NMDS with `metaMDS()`, and judge it using its stress.
+> - Save your results, and commit your work to GitHub.
+
+In Chapter 13 we downloaded NEON data from six streams. Over the next three classes we'll analyze them, and this chapter follows the workflow that you will use for your final project. We'll ask a simple question: **do streams with different habitat have different communities?** We'll answer it for three groups of organisms, macroinvertebrates, fish, and benthic microbes, using the same steps for each:
+
+1. Tidy the counts into a **community matrix**, with one row for each site visit and one column for each taxon.
+2. Summarize the differences among the rows with an ordination, which is a picture of how similar the communities are.
+3. Ask which habitat variables line up with the differences.
+
+We'll start this class by setting up a repository for the project, the same way you set up the repository for your final project. Then we do step 1 and run the ordination for the macroinvertebrates. In the next class we plot it, and repeat the steps for fish and microbes. The habitat variables come in the last class.
+
+## Setting up the repository
+
+A repository is the right home for an analysis like this, and it is what you will build for your final project. We'll use the same structure that you used in Chapter 1.
+
+**Make the repository on GitHub.** On github.com, make a new repository called `neon-streams`. Make it public, and tick the options to add a **README file** and a **.gitignore**, choosing the **R** template for the `.gitignore`.
+
+**Clone it to your Desktop.** Clone the repository, as you did in Chapter 3, so that you have a folder `neon-streams` on your Desktop, next to your `neon-data` folder. Then in RStudio, set the working directory to the new folder, as in Chapter 6. Use your own path:
+
+```{r, eval=FALSE}
+# Mac
+setwd("/Users/yourname/Desktop/neon-streams")
+
+# Windows
+setwd("C:/Users/yourname/Desktop/neon-streams")
+
+getwd()
+```
+
+**Make the folders.** Make the same folders as in your final project:
+
+```{r, eval=FALSE}
+dir.create("scripts")
+dir.create(file.path("data", "raw"), recursive = TRUE)
+dir.create(file.path("data", "processed"))
+dir.create(file.path("output", "figures"), recursive = TRUE)
+```
+
+**Keep the raw data out of GitHub.** Open the `.gitignore` file from R, because a file with a name that starts with a dot is hidden in Finder and File Explorer:
+
+```{r, eval=FALSE}
+file.edit(".gitignore")
+```
+
+Add one line at the bottom, and save the file:
+
+```
+data/raw/
+```
+
+`.gitignore` is a list of files and folders that Git should leave alone. The NEON files are large, and GitHub rejects any file over 100 MB. And we don't need them in the repository, because anyone can rebuild `data/raw` by running your download script. So the repository holds the code that gets the data, and not the data. For your own final project, the raw data files are small enough to commit, and committing them is the right choice, because you can't always download them again.
+
+**Move your Chapter 13 files in.** Your download script and the `.rds` files are in `neon-data`, which is next to this folder. In a path, `..` means "the folder above", as in Chapter 1, so `../neon-data` reaches the folder next door. Copy the files with `file.copy()`:
+
+```{r, eval=FALSE}
+file.copy(list.files("../neon-data/raw", full.names = TRUE), "data/raw")
+file.copy("../neon-data/01-download-neon.R", "scripts")
+
+list.files("data/raw")
+list.files("scripts")
+```
+
+`file.copy()` prints `TRUE` for each file that it copied, and the two `list.files()` lines should show all ten `.rds` files, and the script. Now open `scripts/01-download-neon.R`, and update the line that says where the files go, because they have moved from `raw` to `data/raw`:
+
+```{r, eval=FALSE}
+neon_dir <- file.path("data", "raw")
+```
+
+Now run the `library()` lines at the top of the script, and then the code from `sites <-` to the end of the loop. Select those lines, and press Ctrl+Enter (Cmd+Enter on a Mac). It should print `was already downloaded` for every product, and download nothing, because the files are already there. That tells you that the script works from the new folder.
+
+**Commit.** Ask Git what has changed:
+
+```
+git status
+```
+
+It should list `.gitignore` and `scripts/`, and it should not list `data/raw`, which Git is now ignoring. Commit and push:
+
+```
+git add .gitignore scripts
+git commit -m "Add NEON download script"
+git push
+```
+
+Open the repository on GitHub, and check that the script is there, and the data are not. From now on, we write each new script in `scripts`, and commit it when it works.
+
+**Start the analysis script.** Choose **File > New File > R Script**, and save it as `scripts/02-macroinvertebrates.R`. Write the code in this chapter in it. We need one new package, `vegan`, which has the tools that community ecologists use for ordination:
+
+```{r, eval=FALSE}
+install.packages("vegan")
+library(tidyverse)
+library(vegan)
+```
+
+## Reading the data
+
+In Chapter 13, `saveRDS()` saved each product as one file. `readRDS()` reads a file back, and gives us the same named list that `loadByProduct()` gave us:
+
+```{r, eval=FALSE}
+inv <- readRDS("data/raw/macroinvertebrates.rds")
+names(inv)
+#> [1] "categoricalCodes_20120"      "citation_20120_RELEASE-2026"
+#> [3] "inv_fieldData"               "inv_persample"
+#> [5] "inv_taxonomyProcessed"       "issueLog_20120"
+#> [7] "readme_20120"                "validation_20120"
+#> [9] "variables_20120"
+```
+
+The package that downloaded the data, `neonUtilities`, stores the tables in a format from the `arrow` package, and installed `arrow` for you. If R complains about `arrow` when you read a file, run `install.packages("arrow")`.
+
+Three of these items are data tables, and they all start with `inv_`:
+
+```{r, eval=FALSE}
+nrow(inv$inv_fieldData)
+#> [1] 144
+nrow(inv$inv_persample)
+#> [1] 143
+nrow(inv$inv_taxonomyProcessed)
+#> [1] 6301
+```
+
+- `inv_fieldData` has one row for each sample taken in the stream: where, when, and how.
+- `inv_persample` has one row for each sample, with what happened to it in the laboratory.
+- `inv_taxonomyProcessed` has the identifications: one row for each taxon found in a sample, with a count. This is the table that holds the community.
+
+All three have a `sampleID` column, which is how we match a count to the sample it came from, using the joins from Chapter 12. Let's look at the field data first:
+
+```{r, eval=FALSE}
+inv$inv_fieldData |>
+  select(siteID, sampleID, habitatType, samplerType, benthicArea) |>
+  head()
+#>   siteID               sampleID habitatType samplerType benthicArea
+#> 1   HOPB   HOPB.20240422.CORE.3        pool        core       0.006
+#> 2   HOPB HOPB.20240422.SURBER.4      riffle      surber       0.093
+#> 3   HOPB   HOPB.20240422.CORE.2        pool        core       0.006
+#> 4   HOPB HOPB.20240422.SURBER.1      riffle      surber       0.093
+#> 5   HOPB   HOPB.20240422.CORE.1        pool        core       0.006
+#> 6   HOPB HOPB.20240422.SURBER.3      riffle      surber       0.093
+```
+
+Two details matter. First, NEON uses different samplers in different habitats: a core in a pool, and a Surber net in a riffle. Second, `benthicArea` is the area of stream bed that each sampler covers, in square meters. A Surber net samples 0.093 m^2, and a core only 0.006 m^2, so a count from a Surber sample can't be compared with a count from a core sample. We'll fix that later by converting counts to densities.
+
+## The sampling design
+
+Each site was sampled on several dates. Let's see when:
+
+```{r, eval=FALSE}
+field <- inv$inv_fieldData |>
+  mutate(month = month(collectDate))
+
+field |>
+  count(siteID, month) |>
+  pivot_wider(names_from = month, values_from = n)
+#> # A tibble: 6 x 5
+#>   siteID   `4`   `7`  `10`   `3`
+#>   <chr>  <int> <int> <int> <int>
+#> 1 HOPB       8     8     8    NA
+#> 2 LECO      NA     8     8     8
+#> 3 LEWI      NA     8     8     8
+#> 4 MAYF       8     8     8    NA
+#> 5 POSE      NA     8     8     8
+#> 6 WALK      NA     8     8     8
+```
+
+`month()` takes the month out of a date. Every site was sampled three times, with eight samples each time. Four sites had their spring visit in March and two in April, and we want to treat March and April as the same season. So we'll make a new column, `bout`, with a name for each sampling visit. `case_when()` works like the `if`, `else if` and `else` from Chapter 13, but for every row of a column: it checks the conditions in order, and uses the value after the `~` for the first one that is `TRUE`:
+
+```{r, eval=FALSE}
+field <- inv$inv_fieldData |>
+  mutate(
+    month = month(collectDate),
+    bout = case_when(
+      month %in% c(3, 4) ~ "spring",
+      month == 7 ~ "summer",
+      month == 10 ~ "fall"
+    )
+  ) |>
+  select(sampleID, siteID, bout, habitatType, samplerType, benthicArea)
+
+field |>
+  count(siteID, bout) |>
+  pivot_wider(names_from = bout, values_from = n)
+#> # A tibble: 6 x 4
+#>   siteID  fall spring summer
+#>   <chr>  <int>  <int>  <int>
+#> 1 HOPB       8      8      8
+#> 2 LECO       8      8      8
+#> 3 LEWI       8      8      8
+#> 4 MAYF       8      8      8
+#> 5 POSE       8      8      8
+#> 6 WALK       8      8      8
+```
+
+Now every site has the same three visits, which gives us 6 sites x 3 bouts = 18 site visits to compare. Check that no sample fell through the cracks, with a `bout` of `NA`:
+
+```{r, eval=FALSE}
+sum(is.na(field$bout))
+#> [1] 0
+```
+
+## Counting taxa
+
+Now the identifications. We only need a few of the columns:
+
+```{r, eval=FALSE}
+counts <- inv$inv_taxonomyProcessed |>
+  select(sampleID, scientificName, taxonRank, estimatedTotalCount)
+
+head(counts)
+#>                 sampleID              scientificName    taxonRank
+#> 1   HOPB.20240422.CORE.3   Polypedilum scalaenum gr. speciesGroup
+#> 2 HOPB.20240422.SURBER.4 Cricotopus/Orthocladius sp. speciesGroup
+#> 3 HOPB.20240422.SURBER.3                Agapetus sp.        genus
+#> 4 HOPB.20240422.SURBER.5             Rheosmittia sp.        genus
+#> 5   HOPB.20240422.CORE.1                Hexatoma sp.        genus
+#> 6 HOPB.20240422.SURBER.5          Psephenus herricki      species
+#>   estimatedTotalCount
+#> 1                   2
+#> 2                   1
+#> 3                   6
+#> 4                  29
+#> 5                   1
+#> 6                   1
+```
+
+`estimatedTotalCount` is the number of individuals of that taxon in the sample. When a sample had too many animals to identify, the laboratory identified a fraction of them, and `estimatedTotalCount` scales the count up to the whole sample. We'll use it, rather than `individualCount`.
+
+`scientificName` is the lowest taxon that the laboratory could identify the animal to, and `taxonRank` says what level that is. These vary. Let's count the individuals at each rank:
+
+```{r, eval=FALSE}
+counts |>
+  count(taxonRank, wt = estimatedTotalCount, sort = TRUE)
+#>        taxonRank     n
+#> 1          genus 28873
+#> 2         family 12444
+#> 3      subfamily  6644
+#> 4        species  4591
+#> 5          class  3134
+#> 6          tribe  2173
+#> 7   speciesGroup  1871
+#> 8          order   535
+#> 9         phylum   399
+#> 10      suborder   218
+#> 11      subclass    81
+#> 12      subgenus    39
+#> 13   superfamily     6
+```
+
+`count()` with `wt =` adds up the counts, instead of counting rows. Most animals were identified to genus, but many could only be identified to family, subfamily, or tribe, and a few to class or phylum. We could choose one level, such as family, and lose the animals that can't be identified that finely. Instead, we'll do what is common practice in stream ecology and use the **lowest practical taxonomic unit**: each animal keeps the lowest level that it could be identified to. Then `scientificName` is our taxon, and we lose no animals:
+
+```{r, eval=FALSE}
+sum(counts$estimatedTotalCount)
+#> [1] 61008
+
+n_distinct(counts$scientificName)
+#> [1] 378
+```
+
+There are 378 different taxa, at a mix of levels. This has a cost: a midge that was identified only to the subfamily Orthocladiinae is counted separately from a midge identified to a genus in that subfamily, even though the second belongs in the first. More careful analyses have rules for sorting out this overlap, and we'll skip them here. Remember it when you interpret the results.
+
+Some samples have more than one row for the same taxon, for example, because the laboratory recorded larvae and adults separately, or counted different size classes separately:
+
+```{r, eval=FALSE}
+counts |>
+  count(sampleID, scientificName) |>
+  filter(n > 1) |>
+  nrow()
+#> [1] 1215
+```
+
+We need one count for each sample and taxon, so we add up the rows with `group_by()` and `summarise()`:
+
+```{r, eval=FALSE}
+taxon_counts <- counts |>
+  group_by(sampleID, scientificName) |>
+  summarise(count = sum(estimatedTotalCount), .groups = "drop")
+
+nrow(taxon_counts)
+#> [1] 4300
+
+sum(taxon_counts$count)
+#> [1] 61008
+```
+
+We started with 6,301 rows, and now have 4,300, one for each taxon found in each sample. The total of 61,008 is the same as before, which tells us that adding up the rows didn't lose or invent any animals.
+
+## From counts to densities
+
+We now have counts for each sample, but a sample from a Surber net covers about 15 times more stream bed than a core. And the samples in one visit are eight small pieces of the same stream, so they aren't separate communities. For our question, the unit is the **site visit**: one site on one bout. So we'll add up the counts of its eight samples, add up their areas, and divide, which gives the number of animals per square meter.
+
+First, the area of each site visit. We add up `benthicArea` from the field data:
+
+```{r, eval=FALSE}
+visit_area <- field |>
+  group_by(siteID, bout) |>
+  summarise(area = sum(benthicArea), .groups = "drop")
+
+visit_area |> head(4)
+#> # A tibble: 4 x 3
+#>   siteID bout    area
+#>   <chr>  <chr>  <dbl>
+#> 1 HOPB   fall   0.483
+#> 2 HOPB   spring 0.483
+#> 3 HOPB   summer 0.483
+#> 4 LECO   fall   0.483
+```
+
+Next, attach each count to its site and bout with a join, add the counts up for each visit, attach the area, and divide:
+
+```{r, eval=FALSE}
+density_long <- taxon_counts |>
+  left_join(field, by = "sampleID") |>
+  group_by(siteID, bout, scientificName) |>
+  summarise(count = sum(count), .groups = "drop") |>
+  left_join(visit_area, by = c("siteID", "bout")) |>
+  mutate(density = count / area)
+
+head(density_long)
+#> # A tibble: 6 x 6
+#>   siteID bout  scientificName  count  area density
+#>   <chr>  <chr> <chr>           <dbl> <dbl>   <dbl>
+#> 1 HOPB   fall  Ablabesmyia sp.     1 0.483    2.07
+#> 2 HOPB   fall  Acerpenna sp.     683 0.483 1414.  
+#> 3 HOPB   fall  Aeolosoma sp.       5 0.483   10.4 
+#> 4 HOPB   fall  Agapetus sp.        2 0.483    4.14
+#> 5 HOPB   fall  Apatania sp.        3 0.483    6.21
+#> 6 HOPB   fall  Atractides sp.      1 0.483    2.07
+```
+
+Each step is one you have used before, so read the pipeline from the top: join the counts to the field data, add up the counts of the eight samples in each visit, join in the visit area, and divide. The result has one row for each taxon at each site visit, with its density in animals per m^2.
+
+## The community matrix
+
+Most community analyses expect a **community matrix**: one row for each site visit, one column for each taxon, and a density in each cell. Our data are in long form, so `pivot_wider()` reshapes them. A taxon that wasn't found at a visit has no row in the long data, so `values_fill = 0` fills in a zero for it:
+
+```{r, eval=FALSE}
+wide <- density_long |>
+  select(siteID, bout, scientificName, density) |>
+  pivot_wider(names_from = scientificName, values_from = density, values_fill = 0)
+
+dim(wide)
+#> [1]  18 380
+```
+
+18 site visits, and 380 columns: 378 taxa, plus `siteID` and `bout`. The ordination functions in `vegan` want only the numbers, and they want to know the name of each row. So we split the matrix from its labels:
+
+```{r, eval=FALSE}
+comm <- wide |>
+  select(-siteID, -bout) |>
+  as.data.frame()
+
+rownames(comm) <- paste(wide$siteID, wide$bout, sep = "_")
+
+comm[1:4, 1:4]
+#>             Ablabesmyia sp. Acerpenna sp. Aeolosoma sp. Agapetus sp.
+#> HOPB_fall          2.070393    1414.07867      10.35197     4.140787
+#> HOPB_spring        0.000000       6.21118       0.00000    31.055901
+#> HOPB_summer        0.000000       0.00000       0.00000     0.000000
+#> LECO_fall          0.000000       0.00000       0.00000     0.000000
+```
+
+The labels stay in `wide`, in the same row order, and we'll use them for plotting. Two quick checks: every row needs at least one animal, and no taxon should have a total of zero.
+
+```{r, eval=FALSE}
+range(rowSums(comm))
+#> [1]  1579.71 28041.41
+
+sum(colSums(comm) == 0)
+#> [1] 0
+```
+
+`rowSums()` adds up each row. The smallest site visit still has about 1,600 animals per m^2, so none are empty.
+
+## What an NMDS does
+
+A community matrix has 378 columns, and we can't look at 378 dimensions. An **ordination** squeezes the information into two dimensions, so that we can plot it. **NMDS**, which stands for non-metric multidimensional scaling, works like this:
+
+1. It measures how different each pair of site visits is, with a number from 0, for identical communities, to 1, for communities that share nothing. We'll use the **Bray-Curtis dissimilarity**, which is the usual choice for counts and densities.
+2. It places the site visits as points on a plot, so that visits with similar communities are close together, and visits with different communities are far apart.
+3. It judges how well the plot matches the real dissimilarities with a number called **stress**, and moves the points to lower it, until it can't improve.
+
+A few things to keep in mind when you read the result:
+
+- Only the **ranks** of the distances matter. If two visits are the most different pair, they should be the farthest apart on the plot, but the distance itself has no units.
+- The axes have no meaning, and no fixed direction: a plot that is flipped or rotated is the same plot. Only the distances between points count.
+- **Stress** measures the mismatch between the plot and the real dissimilarities. Below 0.1 is a good picture, and below 0.2 is usable. Above 0.2, be careful about how far you trust it.
+- The method starts from random positions, and might get stuck in a poor arrangement. So `metaMDS()` repeats the search many times, and keeps the best.
+
+## Running the NMDS
+
+```{r, eval=FALSE}
+set.seed(42)
+nmds <- metaMDS(comm, distance = "bray", k = 2, trymax = 100, trace = 0)
+nmds
+#>
+#> Call:
+#> metaMDS(comm = comm, distance = "bray", k = 2, trymax = 100,      trace = 0)
+#>
+#> global Multidimensional Scaling using monoMDS
+#>
+#> Data:     wisconsin(sqrt(comm))
+#> Distance: bray
+#>
+#> Dimensions: 2
+#> Stress:     0.1361275
+#> Stress type 1, weak ties
+#> Best solution was repeated 2 times in 20 tries
+#> The best solution was from try 10 (random start)
+#> Scaling: centring, PC rotation, halfchange scaling
+#> Species: expanded scores based on 'wisconsin(sqrt(comm))'
+```
+
+The arguments are:
+
+- `distance = "bray"` chooses the Bray-Curtis dissimilarity.
+- `k = 2` asks for two dimensions.
+- `trymax = 100` lets it try up to 100 random starts.
+- `trace = 0` stops it printing every attempt.
+
+`set.seed(42)` makes the random starts the same each time, so that you and I get the same result. Reading the output:
+
+- **`Data: wisconsin(sqrt(comm))`**: our densities range from 0 to thousands, and `metaMDS()` noticed. It took the square root of each density, which reduces the influence of a few very common taxa, and then scaled each taxon and each site visit, a step called the Wisconsin double standardization. It did this on its own, and we didn't have to ask.
+- **`Stress: 0.136`**: this is below 0.2, so the plot is usable.
+- **`Best solution was repeated 2 times in 20 tries`**: more than one random start found the same answer, which is reassuring. If the output says that no solution was repeated, increase `trymax`.
+
+The ordination is finished, and the next class starts by plotting it.
+
+## Saving what we made
+
+We'll use these results again, so we save the community matrix, its labels, and the ordination, in `data/processed`:
+
+```{r, eval=FALSE}
+saveRDS(comm, "data/processed/macroinvertebrate_community.rds")
+saveRDS(wide[, c("siteID", "bout")], "data/processed/macroinvertebrate_labels.rds")
+saveRDS(nmds, "data/processed/macroinvertebrate_nmds.rds")
+```
+
+Raw data stay in `data/raw`, and anything that our code produces goes in `data/processed`. Because the script makes every file in `data/processed`, you can delete the folder's contents and rebuild them by running the script again. Unlike the raw data, these files are small, so they go on GitHub. Save the script, then commit and push:
+
+```
+git status
+git add scripts data/processed
+git commit -m "Add macroinvertebrate community matrix and NMDS"
+git push
+```
+
+`git status` should list the new script and the three files in `data/processed`.
+
+## If something goes wrong
+
+- **`Error in readRDS(...)` or a message about `arrow`.** Run `install.packages("arrow")`, and read the file again.
+- **`Error in file(con, "rb") : cannot open the connection`.** R can't find the file. Check that `getwd()` ends in `neon-streams`, and that `list.files("data/raw")` shows `macroinvertebrates.rds`.
+- **`git status` lists the `.rds` files in `data/raw`.** The `.gitignore` line is missing or has a typo. It should be exactly `data/raw/`, on its own line. If you already ran `git add` on the files, run `git rm -r --cached data/raw` to unstage them, and then try again.
+- **`git push` is rejected because a file is too large.** A file over 100 MB got into a commit. Ask for help before you do anything else, because removing a large file from your history takes some care.
+- **`Error: object 'inv' not found`.** You haven't run the line that reads the data in this session. Run the script from the top.
+- **`no stable solution` or `no convergence`.** NMDS couldn't settle on an arrangement. Increase `trymax`, for example to 200.
+- **The stress is above 0.2.** The two-dimensional plot is a poor picture of your data. Try `k = 3`, or look for a site visit that is much more unusual than the rest.
+- **A `non-numeric` error from `metaMDS()`.** The matrix still has a text column, such as `siteID`. Remove it with `select()`.
+
+## Key points
+
+- Set up the repository before the analysis, with folders for scripts, raw data, processed data, and figures.
+- Use `.gitignore` to keep large raw data out of the repository, and keep the script that downloads them in it.
+- NEON's macroinvertebrate data come in three tables, joined by `sampleID`: field data, laboratory data, and identifications.
+- Counts need work before an analysis: decide how to handle taxonomic level (we used the lowest practical taxonomic unit), add up repeated rows, and convert to density so that samples of different sizes can be compared.
+- A community matrix has one row for each site visit, one column for each taxon, and a zero where a taxon wasn't found. `pivot_wider(values_fill = 0)` makes one from long data.
+- NMDS places site visits on a plot so that similar communities are close together. Only the distances matter, not the axes.
+- Check the stress. Below 0.2 is usable, and below 0.1 is good.
+- Keep the labels with the matrix, in the same row order, so that you can use them to color the plot.
+- Save your processed data in a separate folder from the raw data, and commit your scripts and processed data when they work.
