@@ -16,6 +16,7 @@ rmd_files: [
   "11-intro-to-r.Rmd",
   "12-loops-and-joins.Rmd",
   "13-getting-neon-data.Rmd",
+  "14-nmds-analysis.Rmd",
   "assignments.Rmd"
 ]
 new_session: yes
