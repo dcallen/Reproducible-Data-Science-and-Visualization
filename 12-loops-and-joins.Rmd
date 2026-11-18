@@ -1,5 +1,5 @@
 # Repeating Actions and Combining Tables
->
+
 > **Questions**
 >
 > - How do I repeat an action many times without copying and pasting code?

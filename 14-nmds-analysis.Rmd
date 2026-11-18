@@ -1,8 +1,8 @@
 # Ordinating NEON Communities
 
-> **Teaching:** 80 minutes, live coding (Part 1 of 3)
+> **Part 1 of 3**
 >
-> **Before class:** You need the ten `.rds` files from Chapter 13 in the `raw` folder of your `neon-data` folder, a GitHub account, and Git on your computer (Chapters 2 and 3).
+> **Before class:** You need the ten `.rds` files from Chapter 13 in the `raw` folder of your `neon-data` folder, and a GitHub account.
 >
 > **Questions**
 >
@@ -30,11 +30,73 @@ We'll start this class by setting up a repository for the project, the same way 
 
 ## Setting up the repository
 
-A repository is the right home for an analysis like this, and it is what you will build for your final project. We'll use the same structure that you used in Chapter 1.
+A repository is the right home for an analysis like this, and it is what you will build for your final project. We'll use the same structure that you used in Chapter 1, and we'll go through every step, including the login, which is where most problems happen.
 
-**Make the repository on GitHub.** On github.com, make a new repository called `neon-streams`. Make it public, and tick the options to add a **README file** and a **.gitignore**, choosing the **R** template for the `.gitignore`.
+### Check that Git is ready
 
-**Clone it to your Desktop.** Clone the repository, as you did in Chapter 3, so that you have a folder `neon-streams` on your Desktop, next to your `neon-data` folder. Then in RStudio, set the working directory to the new folder, as in Chapter 6. Use your own path:
+We'll type Git commands in the **Terminal**. In RStudio, choose **Tools > Terminal > New Terminal**, and a Terminal tab opens next to the Console. Type each command after the prompt, and press Enter. First, check that Git is installed:
+
+```
+git --version
+```
+
+It should print a version number. If it says that the command isn't found, install Git from git-scm.com, restart RStudio, and try again. Then check that Git knows who you are, because it records your name and email in every commit:
+
+```
+git config --global user.name
+git config --global user.email
+```
+
+If either one prints nothing, set it, with your own name and the email address of your GitHub account:
+
+```
+git config --global user.name "First Last"
+git config --global user.email "you@example.com"
+```
+
+### Make the repository on GitHub
+
+On github.com, click the **+** at the top right, and choose **New repository**. Fill in the form:
+
+- **Repository name:** `neon-streams`
+- **Public**
+- Tick **Add a README file**.
+- Under **Add .gitignore**, choose the **R** template.
+
+Click **Create repository**. The page that opens is your repository, and the address in your browser is its URL, which looks like `https://github.com/your-username/neon-streams`.
+
+### Make a personal access token
+
+When you push to GitHub, Git has to prove who you are, and GitHub doesn't accept your password for this. It wants a **personal access token**, which is a long string of letters and numbers that works like a password for Git, and that you can cancel at any time.
+
+1. On github.com, click your picture at the top right, and choose **Settings**.
+2. At the bottom of the menu on the left, choose **Developer settings**, then **Personal access tokens**, then **Tokens (classic)**.
+3. Click **Generate new token**, and choose **Generate new token (classic)**.
+4. In **Note**, type a name that tells you what it is for, such as `class laptop`. Set **Expiration** to 90 days.
+5. Tick the **repo** box, and leave everything else unticked.
+6. Click **Generate token**.
+
+GitHub shows the token **once**, so copy it now, and keep the page open until you have used it. Treat it like a password: don't put it in a script, an email, or a screenshot, because anyone who has it can change your repositories. If it leaks, delete it on the same page, and make another. GitHub also cancels tokens that it finds in public places.
+
+### Clone the repository
+
+Cloning downloads a copy of the repository to your computer, and connects it to the original on GitHub. We'll put it on your Desktop, in a folder called `neon-streams`, next to your `neon-data` folder. In the Terminal, run the command for your computer, with your own user name in the path and your own GitHub user name in the address:
+
+```
+# Mac
+git clone https://github.com/your-username/neon-streams.git ~/Desktop/neon-streams
+
+# Windows
+git clone https://github.com/your-username/neon-streams.git C:/Users/yourname/Desktop/neon-streams
+```
+
+The first part is the address of your repository, and the second part is where to put the copy. Git doesn't ask for a password, because the repository is public, and cloning only reads from it. When it finishes, check what you have:
+
+```
+git -C ~/Desktop/neon-streams status
+```
+
+On Windows, write `C:/Users/yourname/Desktop/neon-streams` instead of `~/Desktop/neon-streams`. It should say `On branch main` and `nothing to commit, working tree clean`. Then in RStudio, set the working directory to the new folder, as in Chapter 6, and move the Terminal there too. Use your own path:
 
 ```{r, eval=FALSE}
 # Mac
@@ -45,6 +107,16 @@ setwd("C:/Users/yourname/Desktop/neon-streams")
 
 getwd()
 ```
+
+```
+# Mac
+cd ~/Desktop/neon-streams
+
+# Windows
+cd C:/Users/yourname/Desktop/neon-streams
+```
+
+From now on, run every Git command in this Terminal, in this folder. If you aren't sure where the Terminal is, `pwd` prints its folder.
 
 **Make the folders.** Make the same folders as in your final project:
 
@@ -101,6 +173,8 @@ git commit -m "Add NEON download script"
 git push
 ```
 
+The first time you push, Git asks you to log in. For **Username**, type your GitHub user name, not your email address. For **Password**, paste the **token** that you made. Nothing appears on the screen when you paste into a password prompt, so don't be alarmed, just press Enter. Your computer saves the token, so you won't be asked again.
+
 Open the repository on GitHub, and check that the script is there, and the data are not. From now on, we write each new script in `scripts`, and commit it when it works.
 
 **Start the analysis script.** Choose **File > New File > R Script**, and save it as `scripts/02-macroinvertebrates.R`. Write the code in this chapter in it. We need one new package, `vegan`, which has the tools that community ecologists use for ordination:
@@ -145,8 +219,8 @@ nrow(inv$inv_taxonomyProcessed)
 All three have a `sampleID` column, which is how we match a count to the sample it came from, using the joins from Chapter 12. Let's look at the field data first:
 
 ```{r, eval=FALSE}
-inv$inv_fieldData |>
-  select(siteID, sampleID, habitatType, samplerType, benthicArea) |>
+inv$inv_fieldData %>%
+  select(siteID, sampleID, habitatType, samplerType, benthicArea) %>%
   head()
 #>   siteID               sampleID habitatType samplerType benthicArea
 #> 1   HOPB   HOPB.20240422.CORE.3        pool        core       0.006
@@ -164,11 +238,11 @@ Two details matter. First, NEON uses different samplers in different habitats: a
 Each site was sampled on several dates. Let's see when:
 
 ```{r, eval=FALSE}
-field <- inv$inv_fieldData |>
+field <- inv$inv_fieldData %>%
   mutate(month = month(collectDate))
 
-field |>
-  count(siteID, month) |>
+field %>%
+  count(siteID, month) %>%
   pivot_wider(names_from = month, values_from = n)
 #> # A tibble: 6 x 5
 #>   siteID   `4`   `7`  `10`   `3`
@@ -184,7 +258,7 @@ field |>
 `month()` takes the month out of a date. Every site was sampled three times, with eight samples each time. Four sites had their spring visit in March and two in April, and we want to treat March and April as the same season. So we'll make a new column, `bout`, with a name for each sampling visit. `case_when()` works like the `if`, `else if` and `else` from Chapter 13, but for every row of a column: it checks the conditions in order, and uses the value after the `~` for the first one that is `TRUE`:
 
 ```{r, eval=FALSE}
-field <- inv$inv_fieldData |>
+field <- inv$inv_fieldData %>%
   mutate(
     month = month(collectDate),
     bout = case_when(
@@ -192,11 +266,11 @@ field <- inv$inv_fieldData |>
       month == 7 ~ "summer",
       month == 10 ~ "fall"
     )
-  ) |>
+  ) %>%
   select(sampleID, siteID, bout, habitatType, samplerType, benthicArea)
 
-field |>
-  count(siteID, bout) |>
+field %>%
+  count(siteID, bout) %>%
   pivot_wider(names_from = bout, values_from = n)
 #> # A tibble: 6 x 4
 #>   siteID  fall spring summer
@@ -221,7 +295,7 @@ sum(is.na(field$bout))
 Now the identifications. We only need a few of the columns:
 
 ```{r, eval=FALSE}
-counts <- inv$inv_taxonomyProcessed |>
+counts <- inv$inv_taxonomyProcessed %>%
   select(sampleID, scientificName, taxonRank, estimatedTotalCount)
 
 head(counts)
@@ -246,7 +320,7 @@ head(counts)
 `scientificName` is the lowest taxon that the laboratory could identify the animal to, and `taxonRank` says what level that is. These vary. Let's count the individuals at each rank:
 
 ```{r, eval=FALSE}
-counts |>
+counts %>%
   count(taxonRank, wt = estimatedTotalCount, sort = TRUE)
 #>        taxonRank     n
 #> 1          genus 28873
@@ -279,9 +353,9 @@ There are 378 different taxa, at a mix of levels. This has a cost: a midge that 
 Some samples have more than one row for the same taxon, for example, because the laboratory recorded larvae and adults separately, or counted different size classes separately:
 
 ```{r, eval=FALSE}
-counts |>
-  count(sampleID, scientificName) |>
-  filter(n > 1) |>
+counts %>%
+  count(sampleID, scientificName) %>%
+  filter(n > 1) %>%
   nrow()
 #> [1] 1215
 ```
@@ -289,8 +363,8 @@ counts |>
 We need one count for each sample and taxon, so we add up the rows with `group_by()` and `summarise()`:
 
 ```{r, eval=FALSE}
-taxon_counts <- counts |>
-  group_by(sampleID, scientificName) |>
+taxon_counts <- counts %>%
+  group_by(sampleID, scientificName) %>%
   summarise(count = sum(estimatedTotalCount), .groups = "drop")
 
 nrow(taxon_counts)
@@ -309,11 +383,11 @@ We now have counts for each sample, but a sample from a Surber net covers about 
 First, the area of each site visit. We add up `benthicArea` from the field data:
 
 ```{r, eval=FALSE}
-visit_area <- field |>
-  group_by(siteID, bout) |>
+visit_area <- field %>%
+  group_by(siteID, bout) %>%
   summarise(area = sum(benthicArea), .groups = "drop")
 
-visit_area |> head(4)
+visit_area %>% head(4)
 #> # A tibble: 4 x 3
 #>   siteID bout    area
 #>   <chr>  <chr>  <dbl>
@@ -326,11 +400,11 @@ visit_area |> head(4)
 Next, attach each count to its site and bout with a join, add the counts up for each visit, attach the area, and divide:
 
 ```{r, eval=FALSE}
-density_long <- taxon_counts |>
-  left_join(field, by = "sampleID") |>
-  group_by(siteID, bout, scientificName) |>
-  summarise(count = sum(count), .groups = "drop") |>
-  left_join(visit_area, by = c("siteID", "bout")) |>
+density_long <- taxon_counts %>%
+  left_join(field, by = "sampleID") %>%
+  group_by(siteID, bout, scientificName) %>%
+  summarise(count = sum(count), .groups = "drop") %>%
+  left_join(visit_area, by = c("siteID", "bout")) %>%
   mutate(density = count / area)
 
 head(density_long)
@@ -352,8 +426,8 @@ Each step is one you have used before, so read the pipeline from the top: join t
 Most community analyses expect a **community matrix**: one row for each site visit, one column for each taxon, and a density in each cell. Our data are in long form, so `pivot_wider()` reshapes them. A taxon that wasn't found at a visit has no row in the long data, so `values_fill = 0` fills in a zero for it:
 
 ```{r, eval=FALSE}
-wide <- density_long |>
-  select(siteID, bout, scientificName, density) |>
+wide <- density_long %>%
+  select(siteID, bout, scientificName, density) %>%
   pivot_wider(names_from = scientificName, values_from = density, values_fill = 0)
 
 dim(wide)
@@ -363,8 +437,8 @@ dim(wide)
 18 site visits, and 380 columns: 378 taxa, plus `siteID` and `bout`. The ordination functions in `vegan` want only the numbers, and they want to know the name of each row. So we split the matrix from its labels:
 
 ```{r, eval=FALSE}
-comm <- wide |>
-  select(-siteID, -bout) |>
+comm <- wide %>%
+  select(-siteID, -bout) %>%
   as.data.frame()
 
 rownames(comm) <- paste(wide$siteID, wide$bout, sep = "_")
@@ -468,6 +542,10 @@ git push
 
 - **`Error in readRDS(...)` or a message about `arrow`.** Run `install.packages("arrow")`, and read the file again.
 - **`Error in file(con, "rb") : cannot open the connection`.** R can't find the file. Check that `getwd()` ends in `neon-streams`, and that `list.files("data/raw")` shows `macroinvertebrates.rds`.
+- **`Invalid username or token. Password authentication is not supported`, or `Authentication failed`.** Git sent something that GitHub doesn't accept. Check three things. The username must be your GitHub user name, not your email. The password must be the token, and not your GitHub password. And the token must still work: if it has expired, or you copied only part of it, make a new one. If Git keeps sending an old saved token, delete it, and push again so that it asks for a new one. On a Mac, run `printf "protocol=https\nhost=github.com\n\n" | git credential-osxkeychain erase` in the Terminal. On Windows, open **Credential Manager** from the Start menu, choose **Windows Credentials**, and remove the entries for `github.com`.
+- **`git: command not found`, or `'git' is not recognized`.** Git isn't installed, or RStudio was open when you installed it. Install it from git-scm.com, and restart RStudio.
+- **`fatal: not a git repository`.** The Terminal is in the wrong folder. Use `cd` to go to `neon-streams`, and check with `pwd`.
+- **`fatal: destination path ... already exists and is not an empty directory`.** You already have a folder with that name, perhaps from an earlier try. Delete it, or choose a different folder name, and clone again.
 - **`git status` lists the `.rds` files in `data/raw`.** The `.gitignore` line is missing or has a typo. It should be exactly `data/raw/`, on its own line. If you already ran `git add` on the files, run `git rm -r --cached data/raw` to unstage them, and then try again.
 - **`git push` is rejected because a file is too large.** A file over 100 MB got into a commit. Ask for help before you do anything else, because removing a large file from your history takes some care.
 - **`Error: object 'inv' not found`.** You haven't run the line that reads the data in this session. Run the script from the top.

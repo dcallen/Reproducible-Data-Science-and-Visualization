@@ -1,9 +1,5 @@
 # Getting Data from NEON
 
-> **Teaching:** 80 minutes, live coding
->
-> **Before class:** Create a NEON account and an API token (see "Getting an API token" below). It takes about 10 minutes, and you need it for everything else in this chapter.
->
 > **Questions**
 >
 > - How does NEON organize its data?
@@ -150,7 +146,7 @@ length(inv_test)
 names(inv_test)
 ```
 
-Some of the names are data tables, such as `inv_fieldData` and `inv_perSample`. They share a prefix that belongs to the product, here `inv_`. The rest are documentation: a table of allowed values for coded columns, `categoricalCodes_20120`, a table that defines every variable, `variables_20120`, a validation table, and a citation table. NEON asks you to cite the data you use, and the citation table is where to find how.
+Some of the names are data tables, such as `inv_fieldData` and `inv_persample`. They share a prefix that belongs to the product, here `inv_`. The rest are documentation: a table of allowed values for coded columns, `categoricalCodes_20120`, a table that defines every variable, `variables_20120`, a validation table, and a citation table. NEON asks you to cite the data you use, and the citation table is where to find how.
 
 Look at the first rows of one data table:
 
@@ -168,8 +164,8 @@ names(variables_tbl)
 The column `table` says which data table a row describes, and `fieldName` says which column of that table. Now we can look up what `collectDate` means in `inv_fieldData`, by filtering the variables table:
 
 ```{r, eval=FALSE}
-variables_tbl |>
-  filter(table == "inv_fieldData", fieldName == "collectDate") |>
+variables_tbl %>%
+  filter(table == "inv_fieldData", fieldName == "collectDate") %>%
   select(fieldName, description, dataType, units)
 ```
 
